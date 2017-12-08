@@ -15,6 +15,7 @@ SET @distributionDB = N'distribution';
 EXEC sp_dropdistributiondb @distributionDB;
 
 -- Remove the local server as a Distributor.
+-- remove the Distributor designation from the server.
 EXEC sp_dropdistributor;
 
 

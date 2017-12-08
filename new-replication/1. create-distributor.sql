@@ -4,10 +4,12 @@ is used primarily to store object names when creating scripts.
 Its value cannot be NULL
 It is basically the same as using nvarchar(128) NOT NULL
 */
+-- Execute this script on distributor database
 
 -- Install the Distributor and the distribution database.
 DECLARE @distributor AS sysname;
 DECLARE @distributionDB AS sysname;
+DECLARE @password NVARCHAR(20) = N'12345';
 
 SET @distributor = 'DESKTOP-TEOD82V\DISTRIBUTOR';
 -- Specify the distribution database.
@@ -17,18 +19,18 @@ SET @distributionDB = N'distribution';
 
 -- create distributor with password.
 USE master
-EXEC sp_adddistributor @distributor = @distributor, @password = N'12345'
+EXEC sp_adddistributor @distributor = @distributor, @password = @password
 
 
 -- Create a new distribution database using the defaults, including
--- using Windows Authentication.
+-- using ad Windows Authentication.
 USE master
 EXEC sp_adddistributiondb @database = @distributionDB, 
     @security_mode = 1;
 GO
 
 
--- Create a Publisher 
+-- Create a Publisher on distributor server in distribution database
 DECLARE @distributionDB AS sysname;
 DECLARE @publisher AS sysname;
 -- Specify the distribution database.

@@ -2,11 +2,6 @@ Use AdventureWorks2014
 
 go
 
--- To avoid storing the login and password in the script file, the values 
--- are passed into SQLCMD as scripting variables. For information about 
--- how to use scripting variables on the command line and in SQL Server
--- Management Studio, see the "Executing Replication Scripts" section in
--- the topic "Programming Replication Using System Stored Procedures".
 
 DECLARE @publicationDB AS sysname;
 DECLARE @publication AS sysname;
@@ -34,14 +29,17 @@ EXEC sp_addlogreader_agent
 	-- when connecting to the Publisher.
 	@publisher_security_mode = 1;
 
+
 -- Create a new transactional publication with the required properties. 
 EXEC sp_addpublication 
 	@publication = @publication, 
 	@status = N'active',
 	@allow_push = N'true',
 	@allow_pull = N'true',
-	@independent_agent = N'true';
-
+	@independent_agent = N'true',
+	@allow_initialize_from_backup = N'true';
+	--@immediate_sync = N'true';
+/*
 -- Create a new snapshot job for the publication, using a default schedule.
 EXEC sp_addpublication_snapshot 
 	@publication = @publication, 
@@ -51,3 +49,5 @@ EXEC sp_addpublication_snapshot
 	-- when connecting to the Publisher.
 	@publisher_security_mode = 1;
 GO
+
+*/

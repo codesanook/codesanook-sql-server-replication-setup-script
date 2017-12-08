@@ -1,5 +1,4 @@
-
----on publisher from 
+-- on publisher 
 
 -- 1 remove subscription from publisher
 DECLARE @publication AS sysname;
@@ -11,31 +10,29 @@ SET @subscriber = N'DESKTOP-TEOD82V\SUBSCRIBER';
 USE [AdventureWorks2014]
 EXEC sp_dropsubscription 
   @publication = @publication, 
-  @article = N'all',
-  @subscriber = @subscriber;
+  @subscriber = @subscriber,
+  @article = N'all';
 GO
-
 
 --2 remove publication on publisher
 DECLARE @publicationDB AS sysname;
 DECLARE @publication AS sysname;
+
 SET @publicationDB = N'AdventureWorks2014'; 
 SET @publication = N'TestPerson'; 
+
 
 -- Remove a transactional publication.
 USE [AdventureWorks2014]
 EXEC sp_droppublication @publication = @publication;
-
---Remove replication objects from the database.
-USE [master]
-EXEC sp_replicationdboption @dbname = @publicationDB, @optname = N'publish', @value = N'false'; ---disable the given replication database option
 GO
-
 
 
 --3 Remove replication objects from the publication database
 DECLARE @publicationDB AS sysname
 SET @publicationDB = N'AdventureWorks2014'
+DECLARE @publisher AS sysname;
+SET @publisher = N'DESKTOP-TEOD82V\PUBLISHER';
 
 --Remove replication objects from a publisher database
 --This stored procedure is executed at the Publisher on the publication database or at the Subscriber on the subscription database. 
@@ -43,19 +40,22 @@ SET @publicationDB = N'AdventureWorks2014'
 --such as the distribution database.- Disable the publication database.
 USE master
 EXEC sp_removedbreplication @publicationDB
-GO
 
--- Remove the registration of the local Publisher at the Distributor.
-USE master
+
+---(Optional) If this database has no other publications, execute sp_replicationdboption (Transact-SQL) to disable publication of the current database using snapshot or transactional replication.
+---- Remove replication objects from the database.
+
+EXEC sp_replicationdboption @dbname = @publicationDB, @optname = N'publish', @value = N'false'; ---disable the given replication database option
+
+
+--If the Publisher uses a remote Distributor, , execute sp_dropdistributor.
+EXEC sp_dropdistributor;
+
+
+--This stored procedure should be run once for each Publisher registered at the Distributor.
 EXEC sp_dropdistpublisher @publisher;
 
---verify if it optional
---https://docs.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-dropdistributor-transact-sql
--- Delete the distribution database.
-EXEC sp_dropdistributiondb @distributionDB;
-
---4 Remove the local server as a Distributor.
-EXEC sp_dropdistributor;
 GO
 
-
+-- REF 
+--https://technet.microsoft.com/en-us/library/ms147833(v=sql.105).aspx
