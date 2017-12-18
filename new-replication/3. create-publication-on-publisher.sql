@@ -1,8 +1,3 @@
-Use AdventureWorks2014
-
-go
-
-
 DECLARE @publicationDB AS sysname;
 DECLARE @publication AS sysname;
 DECLARE @login AS sysname;
@@ -29,7 +24,6 @@ EXEC sp_addlogreader_agent
 	-- when connecting to the Publisher.
 	@publisher_security_mode = 1;
 
-
 -- Create a new transactional publication with the required properties. 
 EXEC sp_addpublication 
 	@publication = @publication, 
@@ -39,15 +33,3 @@ EXEC sp_addpublication
 	@independent_agent = N'true',
 	@allow_initialize_from_backup = N'true';
 	--@immediate_sync = N'true';
-/*
--- Create a new snapshot job for the publication, using a default schedule.
-EXEC sp_addpublication_snapshot 
-	@publication = @publication, 
-	@job_login = @login, 
-	@job_password = @password,
-	-- Explicitly specify the use of Windows Integrated Authentication (default) 
-	-- when connecting to the Publisher.
-	@publisher_security_mode = 1;
-GO
-
-*/

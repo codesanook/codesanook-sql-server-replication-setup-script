@@ -1,6 +1,3 @@
-USE AdventureWorks2014
-GO
-
 DECLARE @publication AS sysname;
 DECLARE @subscriber AS sysname;
 DECLARE @subscriptionDB AS sysname;
@@ -11,7 +8,6 @@ SET @subscriber = 'DESKTOP-TEOD82V\SUBSCRIBER';
 SET @subscriptionDB = N'AdventureWorks2014';
 
 --Add a push subscription to a transactional publication.
-USE [AdventureWorks2014]
 EXEC sp_addsubscription 
   @publication = @publication, 
   @subscriber = @subscriber, 
@@ -19,7 +15,7 @@ EXEC sp_addsubscription
   @subscription_type = N'push',
   @sync_type = N'initialize with backup',	
   @backupdevicetype='Disk', 
-  @backupdevicename = N'C:\backup-db\AdventureWorks2014_log3_20171208.TRN';
+  @backupdevicename = N'C:\backup-db\AdventureWorks2014_full.BAK';
 
 --Add an distributor agent job to synchronize the push subscription.
 EXEC sp_addpushsubscription_agent 
@@ -28,10 +24,8 @@ EXEC sp_addpushsubscription_agent
   @subscriber_db = @subscriptionDB, 
   @job_login = 'DESKTOP-TEOD82V\aaron', 
   @job_password = @password
-GO
 
 --TODO initialize from Backup
 
 -- https://justsql.wordpress.com/2012/10/25/sql-server-replication-initialize-from-backup/
 -- https://docs.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-addsubscription-transact-sql
-

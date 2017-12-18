@@ -1,8 +1,3 @@
-
-USE AdventureWorks2014
-go
-
-
 DECLARE @publication    AS sysname;
 DECLARE @table AS sysname;
 DECLARE @schemaowner AS sysname;
@@ -19,5 +14,5 @@ EXEC sp_addarticle
 	@source_owner = @schemaowner, 
 	@schema_option = 0x80030F3,
 	@vertical_partition = N'false', 
+	@identityrangemanagementoption = 'manual', 
 	@type = N'logbased'
-
