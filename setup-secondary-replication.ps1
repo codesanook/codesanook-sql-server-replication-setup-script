@@ -5,8 +5,8 @@ $distributor = "DESKTOP-TEOD82V\DISTRIBUTOR2"
 $distributionDb = "distribution"
 $distributorPassword = "12345"
 
-$publisher = "DESKTOP-TEOD82V\PUBLISHER"
-$subscriber = "DESKTOP-TEOD82V\SUBSCRIBER"
+$publisher = "DESKTOP-TEOD82V\SUBSCRIBER"
+$subscriber = "DESKTOP-TEOD82V\SUBSCRIBER2"
 $masterDb = "master"
 
 $replicatedDb = "AdventureWorks2014"
@@ -17,11 +17,15 @@ $sqlScriptDirectory = "$PSScriptRoot/create-replication";
 $variables =  @(
     "distributor=$distributor",
     "distributionDb=$distributionDb",
-    "distributorPassword= $distributorPassword"
+    "distributorPassword= $distributorPassword",
+
+    "publisher=$publisher" 
     )   
 
 $stepVariables = @(
-    @{ Instance = $distributor; Database = $masterDb; SqlFilePath = "$sqlScriptDirectory/create-distributor.sql"; } 
+    #@{ Instance = $distributor; Database = $masterDb; SqlFilePath = "$sqlScriptDirectory/create-distributor.sql"; } 
+    #@{ Instance = $distributor; Database = $distributionDb; SqlFilePath = "$sqlScriptDirectory/add-publisher-on-distributor.sql"; }
+    #@{ Instance = $publisher; Database = $masterDb; SqlFilePath = "$sqlScriptDirectory/add-distributor-on-publisher.sql"; }
  )
 
 $stepVariables | ForEach-Object {
@@ -30,15 +34,6 @@ $stepVariables | ForEach-Object {
 
 
 <#
-$query = Get-Content -Path " | Out-String
-Invoke-Sqlcmd -Query $query -ServerInstance "DESKTOP-TEOD82V\DISTRIBUTOR" -Database "master"
-
-$query  = Get-Content -Path "$PSScriptRoot\2. add-publisher-on-distributor.sql" | Out-String
-Invoke-Sqlcmd -Query $query -ServerInstance "DESKTOP-TEOD82V\DISTRIBUTOR" -Database "distribution"
-
-$path = "$PSScriptRoot\2. add-distributor-on-publisher.sql"
-Invoke-Query -FilePath $path -Instance $publisher -Database $masterDb 
-
 $path = "$PSScriptRoot\3. create-publication-on-publisher.sql"
 Invoke-Query -FilePath $path -Instance $publisher -Database $replicatedDb
 
