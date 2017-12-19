@@ -1,17 +1,36 @@
-$distributor = "DESKTOP-TEOD82V\DISTRIBUTOR"
+#include replication library 
+. "$PSScriptRoot/replication.ps1"
+
+$distributor = "DESKTOP-TEOD82V\DISTRIBUTOR2"
+$distributionDb = "distribution"
+$distributorPassword = "12345"
+
 $publisher = "DESKTOP-TEOD82V\PUBLISHER"
 $subscriber = "DESKTOP-TEOD82V\SUBSCRIBER"
 $masterDb = "master"
-$distributionDb = "distribution"
+
 $replicatedDb = "AdventureWorks2014"
 $msdbDb = "msdb"
 
-function Invoke-Query($FilePath, $Instance, $Database) {
-    $query = Get-Content -Path $filePath | Out-String
-    Invoke-Sqlcmd -Query $query -ServerInstance $instance -Database $database -ErrorAction Stop
+$sqlScriptDirectory = "$PSScriptRoot/create-replication";
+
+$variables =  @(
+    "distributor=$distributor",
+    "distributionDb=$distributionDb",
+    "distributorPassword= $distributorPassword"
+    )   
+
+$stepVariables = @(
+    @{ Instance = $distributor; Database = $masterDb; SqlFilePath = "$sqlScriptDirectory/create-distributor.sql"; } 
+ )
+
+$stepVariables | ForEach-Object {
+    Invoke-Query -Instance $_.Instance -Database $_.Database -SqlFilePath $_.SqlFilePath -Variables $variables
 }
 
-$query = Get-Content -Path "$PSScriptRoot\1. create-distributor.sql" | Out-String
+
+<#
+$query = Get-Content -Path " | Out-String
 Invoke-Sqlcmd -Query $query -ServerInstance "DESKTOP-TEOD82V\DISTRIBUTOR" -Database "master"
 
 $query  = Get-Content -Path "$PSScriptRoot\2. add-publisher-on-distributor.sql" | Out-String
@@ -51,3 +70,4 @@ try{
 catch {
 
 }
+#>
