@@ -12,6 +12,7 @@ $publication = "AdventureWorks2014Publication"
 # Windows account used to run the Log Reader and Snapshot Agents.
 $jobLogin = "DESKTOP-TEOD82V\aaron"
 $jobPassword = "12345"
+$articleTable = "Users" #dbo.Users
 
 $subscriber = "DESKTOP-TEOD82V\SUBSCRIBER2"
 $masterDB = "master"
@@ -29,14 +30,17 @@ $variables = @(
     "publication=$publication",
 
     "jobLogin=$jobLogin",
-    "jobPassword=$jobPassword"
+    "jobPassword=$jobPassword",
+    "articleTable=$articleTable"
 )   
 
 $stepVariables = @(
     #@{ Instance = $distributor; Database = $masterDB; SqlFilePath = "$sqlScriptDirectory/create-distributor.sql"; } 
     #@{ Instance = $distributor; Database = $distributionDB; SqlFilePath = "$sqlScriptDirectory/add-publisher-on-distributor.sql"; }
     #@{ Instance = $publisher; Database = $masterDB; SqlFilePath = "$sqlScriptDirectory/add-distributor-on-publisher.sql"; }
-    @{ Instance = $publisher; Database = $publicationDB; SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; }
+    #@{ Instance = $publisher; Database = $publicationDB; SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; }
+    #@{ SqlFilePath = "$sqlScriptDirectory/create-article-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
+    #@{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
 )
 
 $stepVariables | ForEach-Object {
@@ -44,20 +48,8 @@ $stepVariables | ForEach-Object {
 }
 
 <#
-$path = "$PSScriptRoot\3. create-publication-on-publisher.sql"
-Invoke-Query -FilePath $path -Instance $publisher -Database $replicatedDb
 
-$path = "$PSScriptRoot\4. create-article-on-publisher.sql"
-Invoke-Query -FilePath $path -Instance $publisher -Database $replicatedDb
-
-try {
-    $path = "$PSScriptRoot\5. disable-distribution-clean-up.sql"
-    Invoke-Query -FilePath $path -Instance $distributor -Database $msdbDb
-}
-catch {
-
-}
-
+#give a fullbackup name variable
 $path = "$PSScriptRoot\6. backup-full-publisher-database.sql"
 Invoke-Query -FilePath $path -Instance $publisher -Database $replicatedDb 
 
