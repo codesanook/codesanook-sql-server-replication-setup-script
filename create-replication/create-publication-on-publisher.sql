@@ -1,14 +1,14 @@
 DECLARE @publicationDB AS sysname;
 DECLARE @publication AS sysname;
-DECLARE @login AS sysname;
-DECLARE @password AS sysname;
-SET @publicationDB = N'AdventureWorks2014'; 
-SET @publication = N'TestPerson'; 
+DECLARE @jobLogin AS sysname;
+DECLARE @jobPassword AS sysname;
+
+SET @publicationDB = '$(publicationDB)'; 
+SET @publication = '$(publication)'; 
 
 -- Windows account used to run the Log Reader and Snapshot Agents.
-SET @login = 'DESKTOP-TEOD82V\aaron'
--- This should be passed at runtime.
-SET @password = '12345' 
+SET @jobLogin = '$(jobLogin)'
+SET @jobPassword = '$(jobPassword)' 
 
 -- Enable transactional or snapshot replication on the publication database.
 EXEC sp_replicationdboption 
@@ -18,8 +18,8 @@ EXEC sp_replicationdboption
 
 -- Execute sp_addlogreader_agent to create the agent job. 
 EXEC sp_addlogreader_agent 
-	@job_login = @login, 
-	@job_password = @password,
+	@job_login = @jobLogin, 
+	@job_password = @jobPassword,
 	-- Explicitly specify the use of Windows Integrated Authentication (default) 
 	-- when connecting to the Publisher.
 	@publisher_security_mode = 1;
@@ -31,5 +31,5 @@ EXEC sp_addpublication
 	@allow_push = N'true',
 	@allow_pull = N'true',
 	@independent_agent = N'true',
-	@allow_initialize_from_backup = N'true';
+	@allow_initialize_from_backup = N'true'; --We will initialize replication from backup file
 	--@immediate_sync = N'true';

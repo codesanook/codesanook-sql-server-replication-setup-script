@@ -2,36 +2,46 @@
 . "$PSScriptRoot/replication.ps1"
 
 $distributor = "DESKTOP-TEOD82V\DISTRIBUTOR2"
-$distributionDb = "distribution"
+$distributionDB = "distribution"
 $distributorPassword = "12345"
 
 $publisher = "DESKTOP-TEOD82V\SUBSCRIBER"
-$subscriber = "DESKTOP-TEOD82V\SUBSCRIBER2"
-$masterDb = "master"
+$publicationDB = "AdventureWorks2014"
+$publication = "AdventureWorks2014Publication"
 
-$replicatedDb = "AdventureWorks2014"
-$msdbDb = "msdb"
+# Windows account used to run the Log Reader and Snapshot Agents.
+$jobLogin = "DESKTOP-TEOD82V\aaron"
+$jobPassword = "12345"
+
+$subscriber = "DESKTOP-TEOD82V\SUBSCRIBER2"
+$masterDB = "master"
+$msdbDB = "msdb"
 
 $sqlScriptDirectory = "$PSScriptRoot/create-replication";
 
-$variables =  @(
+$variables = @(
     "distributor=$distributor",
-    "distributionDb=$distributionDb",
+    "distributionDB=$distributionDB",
     "distributorPassword= $distributorPassword",
 
-    "publisher=$publisher" 
-    )   
+    "publisher=$publisher", 
+    "publicationDB=$publicationDB",
+    "publication=$publication",
+
+    "jobLogin=$jobLogin",
+    "jobPassword=$jobPassword"
+)   
 
 $stepVariables = @(
-    #@{ Instance = $distributor; Database = $masterDb; SqlFilePath = "$sqlScriptDirectory/create-distributor.sql"; } 
-    #@{ Instance = $distributor; Database = $distributionDb; SqlFilePath = "$sqlScriptDirectory/add-publisher-on-distributor.sql"; }
-    #@{ Instance = $publisher; Database = $masterDb; SqlFilePath = "$sqlScriptDirectory/add-distributor-on-publisher.sql"; }
- )
+    #@{ Instance = $distributor; Database = $masterDB; SqlFilePath = "$sqlScriptDirectory/create-distributor.sql"; } 
+    #@{ Instance = $distributor; Database = $distributionDB; SqlFilePath = "$sqlScriptDirectory/add-publisher-on-distributor.sql"; }
+    #@{ Instance = $publisher; Database = $masterDB; SqlFilePath = "$sqlScriptDirectory/add-distributor-on-publisher.sql"; }
+    @{ Instance = $publisher; Database = $publicationDB; SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; }
+)
 
 $stepVariables | ForEach-Object {
     Invoke-Query -Instance $_.Instance -Database $_.Database -SqlFilePath $_.SqlFilePath -Variables $variables
 }
-
 
 <#
 $path = "$PSScriptRoot\3. create-publication-on-publisher.sql"
