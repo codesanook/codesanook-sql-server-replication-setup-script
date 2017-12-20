@@ -10,5 +10,5 @@ New-Replication -Publisher $publisher -Distributor $distributor -Subscriber $sub
 $publisher = "DESKTOP-TEOD82V\SUBSCRIBER"
 $distributor = "DESKTOP-TEOD82V\DISTRIBUTOR2"
 $subscriber = "DESKTOP-TEOD82V\SUBSCRIBER2"
-#New-Replication -Publisher $publisher -Distributor $distributor -Subscriber $subscriber
+New-Replication -Publisher $publisher -Distributor $distributor -Subscriber $subscriber
 

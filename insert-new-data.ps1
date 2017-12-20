@@ -12,5 +12,6 @@ for ($i = 0; $i -lt 500 ; $i++) {
     )
 
     Invoke-Query -Instance $publisher -Database $database -SqlFilePath $sqlFilePath -Variables $variables 
+    "new data inserted"
     Start-Sleep -Seconds 5 
 }
