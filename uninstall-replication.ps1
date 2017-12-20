@@ -1,9 +1,4 @@
 <#
-$path = "$PSScriptRoot\2. drop-replication-on-subscriber.sql"
-Invoke-Query -FilePath $path -Instance $subscriber -Database $masterDb
-#>
-
-<#
 $query = "SELECT spid FROM sys.sysprocesses WHERE dbid = db_id('distribution')"
 $result = Invoke-Sqlcmd -Query $query -ServerInstance $distributor -ErrorAction Stop -Database $masterDb
 $result | ForEach-Object { 
@@ -31,12 +26,6 @@ $subscriptionDB = $publicationDB
 $masterDB = "master"
 $msdbDB = "msdb"
 
-# Windows account used to run the Log Reader and Snapshot Agents.
-$jobLogin = "DESKTOP-TEOD82V\aaron"
-$jobPassword = "12345"
-$articleTable = "Users" #dbo.Users
-
-
 $sqlScriptDirectory = "$PSScriptRoot/drop-replication";
 
 $variables = @(
@@ -54,7 +43,9 @@ $variables = @(
 
 $stepVariables = @(
     #@{ SqlFilePath = "$sqlScriptDirectory/drop-replication-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; } 
-    @{ SqlFilePath = "$sqlScriptDirectory/clean-replication-on-publisher.sql"; Instance = $publisher; Database = $masterDB; } 
+    #@{ SqlFilePath = "$sqlScriptDirectory/clean-replication-on-publisher.sql"; Instance = $publisher; Database = $masterDB; } 
+    @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-subscriber.sql"; Instance = $subscriber; Database = $masterDB; } 
+
 )
 
 $stepVariables | ForEach-Object {
