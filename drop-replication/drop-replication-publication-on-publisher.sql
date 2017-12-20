@@ -1,13 +1,13 @@
-
 --https://technet.microsoft.com/en-us/library/ms152757(v=sql.105).aspx
 
 -- 1 remove subscription from publisher
 DECLARE @publication AS sysname;
 DECLARE @subscriber AS sysname;
 DECLARE @publicationDB AS sysname;
-SET @publication = N'TestPerson';
-SET @subscriber = N'DESKTOP-TEOD82V\SUBSCRIBER';
-SET @publicationDB = N'AdventureWorks2014'; 
+
+SET @publication = '$(publication)';
+SET @subscriber = '$(subscriber)';
+SET @publicationDB = '$(publicationDB)'; 
 
 -- https://technet.microsoft.com/en-us/library/ms146944(v=sql.105).aspx
 EXEC sp_dropsubscription 
@@ -16,7 +16,6 @@ EXEC sp_dropsubscription
   @article = N'all';
 
 --2 remove publication on publisher
-
 -- Remove a transactional publication.
 EXEC sp_droppublication @publication = @publication;
 
