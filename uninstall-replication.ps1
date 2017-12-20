@@ -1,13 +1,3 @@
-
-<#
-$path = "$PSScriptRoot\1. drop-replication-on-publisher.sql"
-Invoke-Query -FilePath $path -Instance $publisher -Database $replicatedDb
-#>
-
-
-# $path = "$PSScriptRoot\1. clean-replication-on-publisher.sql"
-# Invoke-Query -FilePath $path -Instance $publisher -Database $masterDb
-
 <#
 $path = "$PSScriptRoot\2. drop-replication-on-subscriber.sql"
 Invoke-Query -FilePath $path -Instance $subscriber -Database $masterDb
@@ -63,7 +53,8 @@ $variables = @(
 )   
 
 $stepVariables = @(
-    @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; } 
+    #@{ SqlFilePath = "$sqlScriptDirectory/drop-replication-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; } 
+    @{ SqlFilePath = "$sqlScriptDirectory/clean-replication-on-publisher.sql"; Instance = $publisher; Database = $masterDB; } 
 )
 
 $stepVariables | ForEach-Object {
