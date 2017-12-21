@@ -44,8 +44,13 @@ function New-Replication {
     }
 
     $backupDBDirectory = "C:\backup-db\$instanceName\" #must be ending with \ for now 
+    #"backupDBDirectory $backupDBDirectory"
+
     $restoreDBDirectory = "C:\data-db\$instanceName\"  #must be ending with \ for now 
     New-Item -ItemType Directory -Force -Path $backupDBDirectory | Out-Null
+    #SQL server not override existing backup files
+    Remove-Item "$backupDBDirectory*" 
+
     New-Item -ItemType Directory -Force -Path $restoreDBDirectory | Out-Null
 
     $sqlScriptDirectory = "$PSScriptRoot/create-replication";
@@ -84,6 +89,7 @@ function New-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
     )
 
+    Clear-DatabaseProcess -Instance $Subscriber -Database $publicationDB
     Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
 }
 
@@ -112,20 +118,23 @@ function Remove-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; } 
         @{ SqlFilePath = "$sqlScriptDirectory/clean-replication-on-publisher.sql"; Instance = $publisher; Database = $masterDB; } 
         @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-subscriber.sql"; Instance = $subscriber; Database = $masterDB; } 
-
-        #todo investigate more if we really need this step  
-        @{ SqlFilePath = "$sqlScriptDirectory/drop-publisher-on-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
         @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
     )
+    Clear-DatabaseProcess -Instance $Distributor -Database $distributionDB
+    Clear-DatabaseProcess -Instance $Subscriber -Database $publicationDB
+    Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
+}
 
-    $query = "SELECT spid FROM sys.sysprocesses WHERE dbid = db_id('$distributorDB')"
-    $result = Invoke-Sqlcmd -Query $query -ServerInstance $distributor -ErrorAction Stop -Database $masterDb
-    $result
+function Clear-DatabaseProcess($Instance, $Database) {
+    Push-Location
+
+    $query = "SELECT spid FROM sys.sysprocesses WHERE dbid = db_id('$Database')"
+    $result = Invoke-Sqlcmd -Query $query -ServerInstance $Instance -ErrorAction Stop -Database $masterDB
     $result | ForEach-Object { 
         $query = "KILL $($_.spid);"
-        Invoke-Sqlcmd -Query $query -ServerInstance $distributor -ErrorAction Stop -Database $masterDb
+        Invoke-Sqlcmd -Query $query -ServerInstance $Instance -ErrorAction Stop -Database $masterDB
         Write-Host "killed process id $($_.spid)"
     } 
 
-    Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
+    Pop-Location
 }

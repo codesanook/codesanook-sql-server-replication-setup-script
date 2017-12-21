@@ -1,7 +1,15 @@
+--- on distributor
+DECLARE @publisher AS sysname;
+SET @publisher = '$(publisher)'
+-- Remove the registration of Publisher at the Distributor.
+--https://docs.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-dropdistpublisher-transact-sql
+--EXEC sp_dropdistpublisher @publisher = @publisher, @no_checks = 1, @ignore_distributor = 1
+EXEC sp_dropdistpublisher @publisher = @publisher
+
 --Delete the distribution database.
---DECLARE @distributionDB AS sysname;
---SET @distributionDB = '$(distributionDB)';
---EXEC sp_dropdistributiondb @distributionDB;
+DECLARE @distributionDB AS sysname;
+SET @distributionDB = '$(distributionDB)';
+EXEC sp_dropdistributiondb @distributionDB;
 
 -- Remove the local server as a Distributor.
 -- remove the Distributor designation from the server.

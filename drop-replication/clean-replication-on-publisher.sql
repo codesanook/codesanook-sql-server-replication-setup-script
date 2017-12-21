@@ -11,4 +11,5 @@ EXEC sp_replicationdboption @dbname = @publicationDB, @optname = N'publish', @va
 
 -- Remove the registration of the local Publisher at the Distributor.
 -- https://docs.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-dropdistributor-transact-sql
-EXEC sp_dropdistributor @no_checks = 1, @ignore_distributor = 1
+--EXEC sp_dropdistributor @no_checks = 1, @ignore_distributor = 1
+EXEC sp_dropdistributor
