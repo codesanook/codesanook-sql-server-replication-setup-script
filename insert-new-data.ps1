@@ -2,7 +2,7 @@
 . "$PSScriptRoot/replication.ps1"
 
 $publisher = "DESKTOP-TEOD82V\PUBLISHER"
-$database = "AdventureWorks2014"
+$database = "MyStartup"
 $sqlFilePath = "insert-new-data.sql"
 
 for ($i = 0; $i -lt 500 ; $i++) {

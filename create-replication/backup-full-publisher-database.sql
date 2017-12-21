@@ -9,4 +9,5 @@ SET @backupDBDirectory = '$(backupDBDirectory)'
 
 --Make sure this filePath is valid, folders already created 
 SET @backupDBFilePath = @backupDBDirectory + @backupDBName + '.BAK'  
+
 BACKUP DATABASE @backupDBName TO DISK = @backupDBFilePath  

@@ -1,5 +1,2 @@
 
-INSERT INTO [dbo].[Users]
-           ([FirstName])
-     VALUES
-           ('$(firstName)')
+EXECUTE [dbo].[InsertUser] @FirstName = '$(firstName)'

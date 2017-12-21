@@ -3,8 +3,8 @@
 $distributionDB = "distribution"
 $distributorPassword = "12345"
 
-$publicationDB = "AdventureWorks2014"
-$publication = "AdventureWorks2014Publication"
+$publicationDB = "MyStartup"
+$publication = "$($publicationDB)Publication"
 $subscriptionDB = $publicationDB
 $masterDB = "master"
 $msdbDB = "msdb"
@@ -13,6 +13,7 @@ $msdbDB = "msdb"
 $jobLogin = "DESKTOP-TEOD82V\aaron"
 $jobPassword = "12345"
 $articleTable = "Users" #dbo.Users
+$articleStoredProc = "insertUser" #dbo.insertUser stored proc
 $backupDBName = $publicationDB 
 
 function Invoke-Query($Instance, $Database, $SqlFilePath, $Variables) {
@@ -67,6 +68,7 @@ function New-Replication {
         "jobLogin=$jobLogin",
         "jobPassword=$jobPassword",
         "articleTable=$articleTable",
+        "articleStoredProc=$articleStoredProc"
 
         "backupDBName=$backupDBName",
         "backupDBDirectory=$backupDBDirectory",
@@ -80,7 +82,12 @@ function New-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/add-publisher-on-distributor.sql"; Instance = $distributor; Database = $distributionDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/add-distributor-on-publisher.sql"; Instance = $publisher; Database = $masterDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/create-article-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-articles-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
+
+        #todo we may need to create a trn here
+        #from Note: You need to do a backup after the Publication was configured on the Publisher. Otherwise the initialization from backup will not work!
+        #in http://www.sqlpassion.at/archive/2012/08/05/initialize-a-transactional-replication-from-a-database-backup/
+        #and move create a full backup to the top of steps 
 
         @{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/backup-full-publisher-database.sql"; Instance = $publisher; Database = $masterDB; }
@@ -115,13 +122,16 @@ function Remove-Replication {
     )   
 
     $stepVariables = @(
-        @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; } 
-        @{ SqlFilePath = "$sqlScriptDirectory/clean-replication-on-publisher.sql"; Instance = $publisher; Database = $masterDB; } 
-        @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-subscriber.sql"; Instance = $subscriber; Database = $masterDB; } 
-        @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
+        #@{ SqlFilePath = "$sqlScriptDirectory/drop-replication-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; } 
+        #@{ SqlFilePath = "$sqlScriptDirectory/clean-replication-on-publisher.sql"; Instance = $publisher; Database = $masterDB; } 
+        #@{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-subscriber.sql"; Instance = $subscriber; Database = $masterDB; } 
+        #@{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
     )
+
+    Clear-DatabaseProcess -Instance $Publisher -Database $publicationDB
     Clear-DatabaseProcess -Instance $Distributor -Database $distributionDB
     Clear-DatabaseProcess -Instance $Subscriber -Database $publicationDB
+
     Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
 }
 

@@ -9,7 +9,7 @@ RESTORE DATABASE [$(backupDBName)]
 	FROM DISK = '$(backupDBDirectory)$(backupDBName).BAK' 
 
 WITH 
-	MOVE '$(backupDBName)_Data' TO '$(restoreDBDirectory)$(backupDBName).mdf', 
+	MOVE '$(backupDBName)' TO '$(restoreDBDirectory)$(backupDBName).mdf', 
 	MOVE '$(backupDBName)_Log'  TO '$(restoreDBDirectory)$(backupDBName)_Log.ldf', 
 	RECOVERY, REPLACE, STATS = 10;
 

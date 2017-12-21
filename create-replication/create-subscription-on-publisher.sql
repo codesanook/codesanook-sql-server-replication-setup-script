@@ -14,6 +14,7 @@ EXEC sp_addsubscription
   @subscription_type = N'push',
   @sync_type = N'initialize with backup',	
   @backupdevicetype='Disk', 
+  @update_mode = N'read only',
   @backupdevicename = '$(backupDBDirectory)$(backupDBName).BAK';
 
 --Add an distributor agent job to synchronize the push subscription.
