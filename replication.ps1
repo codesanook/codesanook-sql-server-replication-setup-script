@@ -25,7 +25,15 @@ function Invoke-Query($Instance, $Database, $SqlFilePath, $Variables) {
 
 function Invoke-Steps($StepVariables, $SqlVariables) {
     $StepVariables | ForEach-Object {
-        Invoke-Query -Instance $_.Instance -Database $_.Database -SqlFilePath $_.SqlFilePath -Variables $SqlVariables 
+        $step = $_
+        try {
+            Write-Host "Executing $($step.SqlFilePath)"
+            Invoke-Query -Instance $step.Instance -Database $step.Database -SqlFilePath $step.SqlFilePath -Variables $SqlVariables 
+        }
+        catch {
+            Write-Host "Error occured when executing $($step.SqlFilePath)"
+            Write-Host $_.Exception.Message
+        }
     }
 }
 
@@ -81,8 +89,10 @@ function New-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/create-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
         @{ SqlFilePath = "$sqlScriptDirectory/add-publisher-on-distributor.sql"; Instance = $distributor; Database = $distributionDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/add-distributor-on-publisher.sql"; Instance = $publisher; Database = $masterDB; }
+
         @{ SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/create-articles-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-table-article-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-proc-article-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
 
         #todo we may need to create a trn here
         #from Note: You need to do a backup after the Publication was configured on the Publisher. Otherwise the initialization from backup will not work!
@@ -92,6 +102,7 @@ function New-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/backup-full-publisher-database.sql"; Instance = $publisher; Database = $masterDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/drop-create-db-on-subscriber.sql"; Instance = $subscriber; Database = $masterDB; }
+
         @{ SqlFilePath = "$sqlScriptDirectory/create-subscription-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
     )

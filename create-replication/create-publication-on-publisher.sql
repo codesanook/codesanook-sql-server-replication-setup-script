@@ -31,5 +31,5 @@ EXEC sp_addpublication
 	@allow_push = N'true',
 	@allow_pull = N'true',
 	@independent_agent = N'true',
-	@allow_initialize_from_backup = N'true'; --We will initialize replication from backup file
-	--@immediate_sync = N'true';
+	@allow_initialize_from_backup = N'true', --We will initialize replication from backup file
+	@immediate_sync = N'true'; --avoid missing transactions while subscribers are being brought online.
