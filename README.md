@@ -1,5 +1,7 @@
+# Requirement
+
 # How to setup
-* Restore database AdventureWorks2014 from AdventureWorks2014.bak   
+* Execute create-database.sql to create **MyStartup** database 
 
 
 # Setup Replication steps
