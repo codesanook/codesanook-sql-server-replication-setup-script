@@ -93,6 +93,7 @@ function New-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/create-table-article-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/create-proc-article-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/change-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
 
         #todo we may need to create a trn here
         #from Note: You need to do a backup after the Publication was configured on the Publisher. Otherwise the initialization from backup will not work!

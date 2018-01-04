@@ -17,7 +17,7 @@ EXEC sp_addarticle
 	@source_owner = @schemaowner, 
 	@schema_option = 0x0000000008000001,
 	@type = N'proc schema only', --Procedure with schema only.
-    @destination_table = @articleStoredProc , --name of destination store proc 
+    @destination_table = @articleStoredProc , --name of destination table or stored proc 
     @destination_owner = @schemaowner,
     @creation_script = null,
 	@pre_creation_cmd = N'drop';
