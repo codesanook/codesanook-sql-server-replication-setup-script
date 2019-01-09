@@ -4,7 +4,10 @@ SET @publisher = '$(publisher)'
 -- Remove the registration of Publisher at the Distributor.
 --https://docs.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-dropdistpublisher-transact-sql
 --EXEC sp_dropdistpublisher @publisher = @publisher, @no_checks = 1, @ignore_distributor = 1
-EXEC sp_dropdistpublisher @publisher = @publisher, @no_checks = 1, @ignore_distributor = 1
+
+-- At the Distributor, execute sp_dropdistpublisher. This stored procedure should be run once for each Publisher registered at the Distributor.
+--EXEC sp_dropdistpublisher @publisher = @publisher, @no_checks = 1, @ignore_distributor = 1
+EXEC sp_dropdistpublisher @publisher = @publisher
 
 --Delete the distribution database.
 DECLARE @distributionDB AS sysname;

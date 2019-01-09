@@ -3,18 +3,12 @@
 $distributionDB = "distribution"
 $distributorPassword = "12345"
 
-$publicationDB = "MyStartup"
-$publication = "$($publicationDB)Publication"
-$subscriptionDB = $publicationDB
 $masterDB = "master"
 $msdbDB = "msdb"
 
 # Windows account used to run the Log Reader and Snapshot Agents.
 $jobLogin = "DESKTOP-TEOD82V\aaron"
 $jobPassword = "12345"
-$articleTable = "Users" #dbo.Users
-$articleStoredProc = "insertUser" #dbo.insertUser stored proc
-$backupDBName = $publicationDB 
 
 function Invoke-Query($Instance, $Database, $SqlFilePath, $Variables) {
     Push-Location
@@ -41,44 +35,45 @@ function New-Replication {
     param(
         [Parameter(Mandatory = $true)] [string] $Publisher,
         [Parameter(Mandatory = $true)] [string] $Distributor,
-        [Parameter(Mandatory = $true)] [string] $Subscriber
+        [Parameter(Mandatory = $true)] [string] $Subscriber,
+        [Parameter(Mandatory = $true)] [string] $PublicationDB,
+        [Parameter(Mandatory = $true)] [string] $ArticleTable,
+        [Parameter(Mandatory = $true)] [string] $ArticleStoredProc
     )
 
+    $publication = "$($PublicationDB)Publication"
+    $subscriptionDB = $PublicationDB
+
     [regex]$regex = "[\w\-]+\\(?<instanceName>\w+)"
-    $input = $publisher
-        
-    $match = $regex.Match($input)
+    $match = $regex.Match($Publisher)
     if ($match.Success) {
         $instanceName = $match.Groups["instanceName"]
     }
 
     $backupDBDirectory = "C:\backup-db\$instanceName\" #must be ending with \ for now 
-    #"backupDBDirectory $backupDBDirectory"
-
     $restoreDBDirectory = "C:\data-db\$instanceName\"  #must be ending with \ for now 
     New-Item -ItemType Directory -Force -Path $backupDBDirectory | Out-Null
+
     #SQL server not override existing backup files
     Remove-Item "$backupDBDirectory*" 
-
     New-Item -ItemType Directory -Force -Path $restoreDBDirectory | Out-Null
 
     $sqlScriptDirectory = "$PSScriptRoot/create-replication";
-
     $variables = @(
         "distributor=$distributor",
         "distributionDB=$distributionDB",
         "distributorPassword= $distributorPassword",
 
         "publisher=$publisher", 
-        "publicationDB=$publicationDB",
+        "publicationDB=$PublicationDB",
         "publication=$publication",
 
         "jobLogin=$jobLogin",
         "jobPassword=$jobPassword",
-        "articleTable=$articleTable",
-        "articleStoredProc=$articleStoredProc"
+        "articleTable=$ArticleTable",
+        "articleStoredProc=$ArticleStoredProc"
 
-        "backupDBName=$backupDBName",
+        "backupDBName=$PublicationDB",
         "backupDBDirectory=$backupDBDirectory",
         "restoreDBDirectory=$restoreDBDirectory",
         "subscriber=$subscriber",
@@ -90,25 +85,26 @@ function New-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/add-publisher-on-distributor.sql"; Instance = $distributor; Database = $distributionDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/add-distributor-on-publisher.sql"; Instance = $publisher; Database = $masterDB; }
 
-        @{ SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/create-table-article-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/create-proc-article-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/change-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-table-article-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-proc-article-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/change-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
 
         #todo we may need to create a trn here
-        #from Note: You need to do a backup after the Publication was configured on the Publisher. Otherwise the initialization from backup will not work!
+        #from Note: You need to do a backup after the Publication was configured on the Publisher. 
+        #Otherwise the initialization from backup will not work!
         #in http://www.sqlpassion.at/archive/2012/08/05/initialize-a-transactional-replication-from-a-database-backup/
-        #and move create a full backup to the top of steps 
+        #and move a full backup to the top of steps 
 
         @{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/backup-full-publisher-database.sql"; Instance = $publisher; Database = $masterDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/drop-create-db-on-subscriber.sql"; Instance = $subscriber; Database = $masterDB; }
 
-        @{ SqlFilePath = "$sqlScriptDirectory/create-subscription-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-subscription-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
     )
 
-    Clear-DatabaseProcess -Instance $Subscriber -Database $publicationDB
+    Clear-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB
     Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
 }
 
@@ -116,17 +112,19 @@ function Remove-Replication {
     param(
         [Parameter(Mandatory = $true)] [string] $Publisher,
         [Parameter(Mandatory = $true)] [string] $Distributor,
-        [Parameter(Mandatory = $true)] [string] $Subscriber
+        [Parameter(Mandatory = $true)] [string] $Subscriber,
+        [Parameter(Mandatory = $true)] [string] $PublicationDB
     )
 
+    $publication = "$($PublicationDB)Publication"
+    $subscriptionDB = $PublicationDB
     $sqlScriptDirectory = "$PSScriptRoot/drop-replication";
-
     $variables = @(
         "distributor=$distributor",
         "distributionDB=$distributionDB",
 
         "publisher=$publisher", 
-        "publicationDB=$publicationDB",
+        "publicationDB=$PublicationDB",
         "publication=$publication",
 
         "subscriber=$subscriber",
@@ -134,15 +132,15 @@ function Remove-Replication {
     )   
 
     $stepVariables = @(
-        @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-publication-on-publisher.sql"; Instance = $publisher; Database = $publicationDB; } 
+        @{ SqlFilePath = "$sqlScriptDirectory/drop-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; } 
         @{ SqlFilePath = "$sqlScriptDirectory/clean-replication-on-publisher.sql"; Instance = $publisher; Database = $masterDB; } 
         @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-subscriber.sql"; Instance = $subscriber; Database = $masterDB; } 
         @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
     )
 
-    Clear-DatabaseProcess -Instance $Publisher -Database $publicationDB
+    Clear-DatabaseProcess -Instance $Publisher -Database $PublicationDB
     Clear-DatabaseProcess -Instance $Distributor -Database $distributionDB
-    Clear-DatabaseProcess -Instance $Subscriber -Database $publicationDB
+    Clear-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB
 
     Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
 }

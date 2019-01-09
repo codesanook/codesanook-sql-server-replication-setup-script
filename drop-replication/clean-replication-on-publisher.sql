@@ -7,9 +7,13 @@ SET @publicationDB = '$(publicationDB)';
 --Remove replication objects from the database.
 
 --https://technet.microsoft.com/en-us/library/ms147833(v=sql.105).aspx
-EXEC sp_replicationdboption @dbname = @publicationDB, @optname = N'publish', @value = N'false'; ---disable the given replication database option
+---disable the given replication database option
+EXEC sp_replicationdboption @dbname = @publicationDB, @optname = N'publish', @value = N'false'; 
 
 -- Remove the registration of the local Publisher at the Distributor.
 -- https://docs.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-dropdistributor-transact-sql
 --EXEC sp_dropdistributor @no_checks = 1, @ignore_distributor = 1
-EXEC sp_dropdistributor @no_checks = 1
+--EXEC sp_dropdistributor @no_checks = 1
+
+--If the Publisher uses a remote Distributor, execute sp_dropdistributor.
+EXEC sp_dropdistributor sp_dropdistributor

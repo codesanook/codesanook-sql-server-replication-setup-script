@@ -1,2 +1,7 @@
+DECLARE @newId INT
+EXEC dbo.InsertToDoItem 
+    @title = 'Say XinChao', 
+    @Details = 'Say XinChao to everyone', 
+    @NewId = @newId OUTPUT
 
-EXECUTE [dbo].[InsertUser] @FirstName = '$(firstName)'
+PRINT @newId
