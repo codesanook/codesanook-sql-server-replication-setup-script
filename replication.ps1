@@ -10,10 +10,17 @@ $msdbDB = "msdb"
 $jobLogin = "DESKTOP-TEOD82V\aaron"
 $jobPassword = "12345"
 
-function Invoke-Query($Instance, $Database, $SqlFilePath, $Variables) {
+function Invoke-Query($Instance, $Database, $Query, $SqlFilePath, $Variables) {
+    "Database: $DataBase"
+
     Push-Location
     #https://docs.microsoft.com/en-us/sql/powershell/invoke-sqlcmd-cmdlet
-    Invoke-Sqlcmd -ServerInstance $Instance -Database $Database -InputFile $SqlFilePath -Variable $Variables -ErrorAction Stop
+    if ($Query) {
+        Invoke-Sqlcmd -ServerInstance $Instance -Database $Database -Query $Query -Variable $Variables -ErrorAction Stop
+    }
+    else {
+        Invoke-Sqlcmd -ServerInstance $Instance -Database $Database -InputFile $SqlFilePath -Variable $Variables -ErrorAction Stop
+    }
     Pop-Location
 }
 
@@ -60,23 +67,23 @@ function New-Replication {
 
     $sqlScriptDirectory = "$PSScriptRoot/create-replication";
     $variables = @(
-        "distributor=$distributor",
-        "distributionDB=$distributionDB",
-        "distributorPassword= $distributorPassword",
+        "distributor=$distributor"
+        "distributionDB=$distributionDB"
+        "distributorPassword= $distributorPassword"
 
-        "publisher=$publisher", 
-        "publicationDB=$PublicationDB",
-        "publication=$publication",
+        "publisher=$publisher" 
+        "publicationDB=$PublicationDB"
+        "publication=$publication"
 
-        "jobLogin=$jobLogin",
-        "jobPassword=$jobPassword",
-        "articleTable=$ArticleTable",
+        "jobLogin=$jobLogin"
+        "jobPassword=$jobPassword"
+        "articleTable=$ArticleTable"
         "articleStoredProc=$ArticleStoredProc"
 
-        "backupDBName=$PublicationDB",
-        "backupDBDirectory=$backupDBDirectory",
-        "restoreDBDirectory=$restoreDBDirectory",
-        "subscriber=$subscriber",
+        "backupDBName=$PublicationDB"
+        "backupDBDirectory=$backupDBDirectory"
+        "restoreDBDirectory=$restoreDBDirectory"
+        "subscriber=$subscriber"
         "subscriptionDB=$subscriptionDB"
     )   
 
@@ -104,7 +111,9 @@ function New-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
     )
 
+    Clear-DatabaseProcess -Instance $Publisher -Database $PublicationDB
     Clear-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB
+
     Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
 }
 
@@ -115,19 +124,21 @@ function Remove-Replication {
         [Parameter(Mandatory = $true)] [string] $Subscriber,
         [Parameter(Mandatory = $true)] [string] $PublicationDB
     )
+    "Distributor $Distributor"
 
     $publication = "$($PublicationDB)Publication"
     $subscriptionDB = $PublicationDB
     $sqlScriptDirectory = "$PSScriptRoot/drop-replication";
+
     $variables = @(
-        "distributor=$distributor",
-        "distributionDB=$distributionDB",
+        "distributor=$distributor"
+        "distributionDB=$distributionDB"
 
-        "publisher=$publisher", 
-        "publicationDB=$PublicationDB",
-        "publication=$publication",
+        "publisher=$publisher" 
+        "publicationDB=$PublicationDB"
+        "publication=$publication"
 
-        "subscriber=$subscriber",
+        "subscriber=$subscriber"
         "subscriptionDB=$subscriptionDB"
     )   
 

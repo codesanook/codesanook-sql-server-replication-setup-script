@@ -1,17 +1,15 @@
 #include replication library 
-. "$PSScriptRoot/replication.ps1"
+. "$PSScriptRoot/Replication.ps1"
+. "$PSScriptRoot/New-Database.ps1"
 
-#setup group 1 replication
-$publisher = "DESKTOP-TEOD82V\PUBLISHER"
-$distributor = "DESKTOP-TEOD82V\DISTRIBUTOR"
-$subscriber = "DESKTOP-TEOD82V\SUBSCRIBER"
+$arguments = @{
+    Publisher = "DESKTOP-TEOD82V\PUBLISHER"
+    Distributor =  "DESKTOP-TEOD82V\DISTRIBUTOR"
+    Subscriber = "DESKTOP-TEOD82V\SUBSCRIBER"
+    PublicationDB = "ThingsToDo"
+    ArticleTable = "ToDoItems"
+    ArticleStoredProc = "InsertToDoItem"
+}
 
-New-Replication `
-    -Publisher $publisher `
-    -Distributor $distributor `
-    -Subscriber $subscriber `
-    -PublicationDB "ThingsToDo" `
-    -ArticleTable "ToDoItems" `
-    -ArticleStoredProc "InsertToDoItem"
-
-Write-Host "Set up replication successfully"
+New-Replication @arguments 
+"Set up replication successfully"

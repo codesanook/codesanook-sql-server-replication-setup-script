@@ -2,16 +2,32 @@
 . "$PSScriptRoot/replication.ps1"
 
 $publisher = "DESKTOP-TEOD82V\PUBLISHER"
-$database = "MyStartup"
+$subscriber = "DESKTOP-TEOD82V\SUBSCRIBER"
+
+$database = "ThingsToDo"
 $sqlFilePath = "insert-new-data.sql"
 
-for ($i = 0; $i -lt 500 ; $i++) {
-    $firstName = "Xin Chaooo"
-    $variables = @(
-        "firstName=$firstName"
-    )
+$title = "Say XinChao"
+$details = "Say XinChao to everyone"
 
-    Invoke-Query -Instance $publisher -Database $database -SqlFilePath $sqlFilePath -Variables $variables 
-    "new data inserted"
-    Start-Sleep -Seconds 5 
-}
+$command = @"
+    DECLARE @newId INT
+    EXEC dbo.InsertToDoItem 
+        @title = '$title', 
+        @Details = '$details', 
+        @NewId = @newId OUTPUT
+
+    PRINT @newId
+"@
+
+Invoke-Query -Instance $publisher -Database $database -Query $command
+"new data inserted"
+
+"Wait a bit to get replication process done"
+Start-Sleep -Seconds 15
+
+$command = @"
+    SELECT * FROM ToDoItems
+"@
+
+Invoke-Query -Instance $subscriber -Database $database -Query $command
