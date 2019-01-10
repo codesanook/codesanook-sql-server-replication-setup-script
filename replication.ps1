@@ -1,5 +1,4 @@
-
-#shared variable 
+# shared variables
 $distributionDB = "distribution"
 $distributorPassword = "12345"
 
@@ -9,34 +8,6 @@ $msdbDB = "msdb"
 # Windows account used to run the Log Reader and Snapshot Agents.
 $jobLogin = "DESKTOP-TEOD82V\aaron"
 $jobPassword = "12345"
-
-function Invoke-Query($Instance, $Database, $Query, $SqlFilePath, $Variables) {
-    "Database: $DataBase"
-
-    Push-Location
-    #https://docs.microsoft.com/en-us/sql/powershell/invoke-sqlcmd-cmdlet
-    if ($Query) {
-        Invoke-Sqlcmd -ServerInstance $Instance -Database $Database -Query $Query -Variable $Variables -ErrorAction Stop
-    }
-    else {
-        Invoke-Sqlcmd -ServerInstance $Instance -Database $Database -InputFile $SqlFilePath -Variable $Variables -ErrorAction Stop
-    }
-    Pop-Location
-}
-
-function Invoke-Steps($StepVariables, $SqlVariables) {
-    $StepVariables | ForEach-Object {
-        $step = $_
-        try {
-            Write-Host "Executing $($step.SqlFilePath)"
-            Invoke-Query -Instance $step.Instance -Database $step.Database -SqlFilePath $step.SqlFilePath -Variables $SqlVariables 
-        }
-        catch {
-            Write-Host "Error occured when executing $($step.SqlFilePath)"
-            Write-Host $_.Exception.Message
-        }
-    }
-}
 
 function New-Replication {
     param(
@@ -97,11 +68,11 @@ function New-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/create-proc-article-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/change-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
 
-        #todo we may need to create a trn here
-        #from Note: You need to do a backup after the Publication was configured on the Publisher. 
-        #Otherwise the initialization from backup will not work!
-        #in http://www.sqlpassion.at/archive/2012/08/05/initialize-a-transactional-replication-from-a-database-backup/
-        #and move a full backup to the top of steps 
+        # Todo we may need to create a trn here
+        # From Note: You need to do a backup after the Publication was configured on the Publisher. 
+        # Otherwise the initialization from backup will not work!
+        # In http://www.sqlpassion.at/archive/2012/08/05/initialize-a-transactional-replication-from-a-database-backup/
+        # and move a full backup to the top of steps 
 
         @{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/backup-full-publisher-database.sql"; Instance = $publisher; Database = $masterDB; }
@@ -149,11 +120,39 @@ function Remove-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
     )
 
-    Clear-DatabaseProcess -Instance $Publisher -Database $PublicationDB
     Clear-DatabaseProcess -Instance $Distributor -Database $distributionDB
+    Clear-DatabaseProcess -Instance $Publisher -Database $PublicationDB
     Clear-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB
 
     Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
+}
+
+function Invoke-Query($Instance, $Database, $Query, $SqlFilePath, $Variables) {
+    "Database: $DataBase"
+
+    Push-Location
+    #https://docs.microsoft.com/en-us/sql/powershell/invoke-sqlcmd-cmdlet
+    if ($Query) {
+        Invoke-Sqlcmd -ServerInstance $Instance -Database $Database -Query $Query -Variable $Variables -ErrorAction Stop
+    }
+    else {
+        Invoke-Sqlcmd -ServerInstance $Instance -Database $Database -InputFile $SqlFilePath -Variable $Variables -ErrorAction Stop
+    }
+    Pop-Location
+}
+
+function Invoke-Steps($StepVariables, $SqlVariables) {
+    $StepVariables | ForEach-Object {
+        $step = $_
+        try {
+            Write-Host "Executing $($step.SqlFilePath)"
+            Invoke-Query -Instance $step.Instance -Database $step.Database -SqlFilePath $step.SqlFilePath -Variables $SqlVariables 
+        }
+        catch {
+            Write-Host "Error occured when executing $($step.SqlFilePath)"
+            Write-Host $_.Exception.Message
+        }
+    }
 }
 
 function Clear-DatabaseProcess($Instance, $Database) {
