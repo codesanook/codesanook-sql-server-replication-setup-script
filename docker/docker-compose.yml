@@ -1,0 +1,43 @@
+version: "3.7"
+services:
+  publisher:
+    build:
+      context: .
+      dockerfile: db.Dockerfile
+    # If you specify image as well as build,
+    # then Compose names the built image with web
+    # and optional tag specified in image:
+    # This results in an image named web and tagged tag, built from ./dir.
+    image: publisher:latest
+    # hostname: publisher
+    # https://docs.docker.com/compose/compose-file/#container_name
+    container_name: publisher
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "${SA_PASSWORD:?err}"
+      ACCEPT_EULA: "Y"
+
+  distributor:
+    build:
+      context: .
+      dockerfile: db.Dockerfile
+    image: distributor:latest
+    hostname: distributor
+    ports:
+      - "1434:1433"
+    environment:
+      SA_PASSWORD: "${SA_PASSWORD:?err}"
+      ACCEPT_EULA: "Y"
+
+  subscriber:
+    build:
+      context: .
+      dockerfile: db.Dockerfile
+    image: subscriber:latest
+    hostname: subscriber
+    ports:
+      - "1435:1433"
+    environment:
+      SA_PASSWORD: "${SA_PASSWORD:?err}"
+      ACCEPT_EULA: "Y"
