@@ -9,7 +9,7 @@ services:
     # and optional tag specified in image:
     # This results in an image named web and tagged tag, built from ./dir.
     image: publisher:latest
-    # hostname: publisher
+    hostname: publisher
     # https://docs.docker.com/compose/compose-file/#container_name
     container_name: publisher
     ports:
@@ -24,6 +24,7 @@ services:
       dockerfile: db.Dockerfile
     image: distributor:latest
     hostname: distributor
+    container_name: distributor
     ports:
       - "1434:1433"
     environment:
@@ -36,6 +37,7 @@ services:
       dockerfile: db.Dockerfile
     image: subscriber:latest
     hostname: subscriber
+    container_name: subscriber
     ports:
       - "1435:1433"
     environment:
