@@ -5,8 +5,8 @@ $distributorPassword = "12345"
 $masterDB = "master"
 $msdbDB = "msdb"
 
-# Windows account used to run the Log Reader and Snapshot Agents.
-$jobLogin = "DESKTOP-TEOD82V\aaron"
+# Windows account used to run the Log Reader and distribution Agents.
+$jobLogin = "sa"
 $jobPassword = "12345"
 
 function New-Replication {
@@ -22,7 +22,7 @@ function New-Replication {
     $publication = "$($PublicationDB)Publication"
     $subscriptionDB = $PublicationDB
 
-    [regex]$regex = "[\w\-]+\\(?<instanceName>\w+)"
+    [Regex]$regex = "[\w\-]+\\(?<instanceName>\w+)"
     $match = $regex.Match($Publisher)
     if ($match.Success) {
         $instanceName = $match.Groups["instanceName"]
@@ -120,51 +120,112 @@ function Remove-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
     )
 
-    Clear-DatabaseProcess -Instance $Distributor -Database $distributionDB
-    Clear-DatabaseProcess -Instance $Publisher -Database $PublicationDB
-    Clear-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB
-
+    Stop-DatabaseProcess -Instance $Distributor -Database $distributionDB
+    Stop-DatabaseProcess -Instance $Publisher -Database $PublicationDB
+    Stop-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB
     Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
 }
 
-function Invoke-Query($Instance, $Database, $Query, $SqlFilePath, $Variables) {
-    "Database: $DataBase"
+function Invoke-Query {
+    param(
+        $Instance, 
+        $Database,
+        $Username,
+        [SecureString] $Password,
+        $Query,
+        $SqlFilePath, 
+        $Variables
+    )
+
+    "Current working database: $DataBase"
 
     Push-Location
-    #https://docs.microsoft.com/en-us/sql/powershell/invoke-sqlcmd-cmdlet
+    # https://docs.microsoft.com/en-us/sql/powershell/invoke-sqlcmd-cmdlet
     if ($Query) {
-        Invoke-Sqlcmd -ServerInstance $Instance -Database $Database -Query $Query -Variable $Variables -ErrorAction Stop
+        Invoke-Sqlcmd `
+            -ServerInstance $Instance `
+            -Database $Database `
+            -Username $Username `
+            -Password (Get-PlainTextPassword $Password) `
+            -Query $Query `
+            -Variable $Variables `
+            -ErrorAction Stop
     }
     else {
-        Invoke-Sqlcmd -ServerInstance $Instance -Database $Database -InputFile $SqlFilePath -Variable $Variables -ErrorAction Stop
+        Invoke-Sqlcmd `
+            -ServerInstance $Instance `
+            -Database $Database `
+            -Username $Username `
+            -Password (Get-PlainTextPassword $Password) `
+            -InputFile $SqlFilePath `
+            -Variable $Variables `
+            -ErrorAction Stop
     }
     Pop-Location
 }
 
-function Invoke-Steps($StepVariables, $SqlVariables) {
+function Invoke-Steps {
+    param(
+        $tepVariables, 
+        $SqlVariables
+    )
+
     $StepVariables | ForEach-Object {
         $step = $_
         try {
-            Write-Host "Executing $($step.SqlFilePath)"
+            "Executing $($step.SqlFilePath)"
             Invoke-Query -Instance $step.Instance -Database $step.Database -SqlFilePath $step.SqlFilePath -Variables $SqlVariables 
         }
         catch {
-            Write-Host "Error occured when executing $($step.SqlFilePath)"
-            Write-Host $_.Exception.Message
+            "Error occured when executing $($step.SqlFilePath)"
+            $_.Exception.Message
         }
     }
 }
 
-function Clear-DatabaseProcess($Instance, $Database) {
+function Stop-DatabaseProcess() {
+    param(
+        $Instance, 
+        $Database,
+        $Username, 
+        [SecureString] $Password
+    )
     Push-Location
 
     $query = "SELECT spid FROM sys.sysprocesses WHERE dbid = db_id('$Database')"
-    $result = Invoke-Sqlcmd -Query $query -ServerInstance $Instance -ErrorAction Stop -Database $masterDB
+    $result = Invoke-Sqlcmd `
+        -Query $query `
+        -ServerInstance $Instance `
+        -Database "master" `
+        -Username $Username `
+        -Password (Get-PlainTextPassword $Password) `
+        -ErrorAction Stop
+
     $result | ForEach-Object { 
         $query = "KILL $($_.spid);"
-        Invoke-Sqlcmd -Query $query -ServerInstance $Instance -ErrorAction Stop -Database $masterDB
-        Write-Host "killed process id $($_.spid)"
+        Invoke-Sqlcmd `
+            -Query $query `
+            -ServerInstance $Instance `
+            -Database "master" `
+            -Username $Username `
+            -Password (Get-PlainTextPassword $Password) `
+            -ErrorAction Stop
+        "Process ID $($_.spid) killed"
     } 
 
     Pop-Location
+    "Remove all processes on $Database database"
 }
+
+function Get-PlainTextPassword {
+    param(
+        [SecureString] $Password
+    )
+
+    $binaryString = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
+    $plainTextPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($binaryString)
+    $plainTextPassword
+}
+
+Export-ModuleMember -Function Stop-DatabaseProcess
+Export-ModuleMember -Function Invoke-Query
