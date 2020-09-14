@@ -8,5 +8,5 @@ $arguments = @{
     PublicationDB = "ThingsToDo" 
 }
 
-Remove-Replication @arguments 
+Uninstall-Replication @arguments 
 "Uninstalled replication successfully"

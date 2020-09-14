@@ -1,21 +1,26 @@
 param(
-    [Parameter(Mandatory = $true)] [SecureString] $password
+    [Parameter(Mandatory = $true)] [SecureString] $Password
 )
+
 # Import Replication module 
 Import-Module -Name .\Replication -Force
 
+# We specified the a container host name and we don't need to worry about port of SQL server instance port
 $publisher = "publisher"
-$masterDatase = "master"
-$applicationDatabase = "ThingsToDo"
+$distributor = "distributor"
+$subscriber = "subscriber"
 
 $username = "sa" 
-#$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+$masterDatase = "master"
+$applicationDatabase = "ThingsToDo"
+$articleTable = "ToDoItems"
+$articleStoredProc = "InsertToDoItem"
 
 Stop-DatabaseProcess `
     -Instance $publisher `
     -Database $applicationDatabase `
     -Username $username `
-    -Password $password
+    -Password $Password
 
 $createDatabaseScript = "./create-database-objects/create-database.sql" 
 Invoke-Query `
@@ -23,7 +28,7 @@ Invoke-Query `
     -Database $masterDatase `
     -SqlFilePath $createDatabaseScript `
     -Username $username `
-    -Password $password
+    -Password $Password
 "Database $applicationDatabase created"
     
 $createTableScript = "./create-database-objects/create-table.sql" 
@@ -32,8 +37,8 @@ Invoke-Query `
     -Database $applicationDatabase `
     -SqlFilePath $createTableScript `
     -Username $username `
-    -Password $password
-"Table created on database $applicationDatabase"
+    -Password $Password
+"Table created on a database $applicationDatabase"
 
 $createStoredProcedureScript = "./create-database-objects/create-stored-procedure.sql" 
 Invoke-Query `
@@ -41,18 +46,19 @@ Invoke-Query `
     -Database $applicationDatabase `
     -SqlFilePath $createStoredProcedureScript `
     -Username $username `
-    -Password $password
-"Stored proc created on database $applicationDatabase"
-return
+    -Password $Password
+"Stored proc created on a database $applicationDatabase"
 
 $arguments = @{
     Publisher         = $publisher
-    Distributor       = "distributor"
-    Subscriber        = "subscriber"
-    PublicationDB     = "ThingsToDo"
-    ArticleTable      = "ToDoItems"
-    ArticleStoredProc = "InsertToDoItem"
+    Distributor       = $distributor
+    Subscriber        = $subscriber
+    PublicationDB     = $applicationDatabase
+    ArticleTable      = $articleTable
+    ArticleStoredProc = $articleStoredProc
+    Username          = $username
+    Password          = $Password 
 }
 
-New-Replication @arguments 
+Install-Replication @arguments 
 "Set up replication successfully"

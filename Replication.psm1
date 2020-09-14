@@ -1,99 +1,92 @@
-# shared variables
 $distributionDB = "distribution"
-$distributorPassword = "12345"
-
-$masterDB = "master"
-$msdbDB = "msdb"
+# We execute SQL PowerShell from external network so we need to use localhost with external port .
+$publisherInstance = "localhost,1433"
+$distributorInstance = "localhost,1434"
+$subscriberInstance = "localhost,1435"
 
 # Windows account used to run the Log Reader and distribution Agents.
-$jobLogin = "sa"
-$jobPassword = "12345"
 
-function New-Replication {
+function Install-Replication {
     param(
         [Parameter(Mandatory = $true)] [string] $Publisher,
         [Parameter(Mandatory = $true)] [string] $Distributor,
         [Parameter(Mandatory = $true)] [string] $Subscriber,
+        [Parameter(Mandatory = $true)] [string] $Username,
+        [Parameter(Mandatory = $true)] [SecureString] $Password,
         [Parameter(Mandatory = $true)] [string] $PublicationDB,
         [Parameter(Mandatory = $true)] [string] $ArticleTable,
         [Parameter(Mandatory = $true)] [string] $ArticleStoredProc
     )
 
+    $jobPassword =  $plainTextPassword
     $publication = "$($PublicationDB)Publication"
     $subscriptionDB = $PublicationDB
 
-    [Regex]$regex = "[\w\-]+\\(?<instanceName>\w+)"
-    $match = $regex.Match($Publisher)
-    if ($match.Success) {
-        $instanceName = $match.Groups["instanceName"]
-    }
+    $backupDBDirectory = "/var/opt/mssql/backup"
+    $restoreDBDirectory = "/var/opt/mssql/backup"
 
-    $backupDBDirectory = "C:\backup-db\$instanceName\" #must be ending with \ for now 
-    $restoreDBDirectory = "C:\data-db\$instanceName\"  #must be ending with \ for now 
-    New-Item -ItemType Directory -Force -Path $backupDBDirectory | Out-Null
-
-    #SQL server not override existing backup files
-    Remove-Item "$backupDBDirectory*" 
-    New-Item -ItemType Directory -Force -Path $restoreDBDirectory | Out-Null
-
-    $sqlScriptDirectory = "$PSScriptRoot/create-replication";
-    $variables = @(
-        "distributor=$distributor"
+    $sqlScriptDirectory = "$PSScriptRoot/create-replication"
+    $plainTextPassword = Get-PlainTextPassword -Password $Password
+    $sharedVariables = @(
+        "distributor=$Distributor"
         "distributionDB=$distributionDB"
-        "distributorPassword= $distributorPassword"
+        "distributorPassword=$plainTextPassword" # A password of distributor_admin
 
-        "publisher=$publisher" 
+        "publisher=$Publisher" 
         "publicationDB=$PublicationDB"
         "publication=$publication"
 
-        "jobLogin=$jobLogin"
-        "jobPassword=$jobPassword"
+        "username=$username"
+        "password=$plainTextPassword"
         "articleTable=$ArticleTable"
         "articleStoredProc=$ArticleStoredProc"
 
         "backupDBName=$PublicationDB"
         "backupDBDirectory=$backupDBDirectory"
         "restoreDBDirectory=$restoreDBDirectory"
-        "subscriber=$subscriber"
+        "subscriber=$Subscriber"
         "subscriptionDB=$subscriptionDB"
     )   
 
     $stepVariables = @(
-        @{ SqlFilePath = "$sqlScriptDirectory/create-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
-        @{ SqlFilePath = "$sqlScriptDirectory/add-publisher-on-distributor.sql"; Instance = $distributor; Database = $distributionDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/add-distributor-on-publisher.sql"; Instance = $publisher; Database = $masterDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/configure-distributor.sql"; Instance = $distributorInstance; Database = 'master'; } 
+        @{ SqlFilePath = "$sqlScriptDirectory/create-distribution-database.sql"; Instance = $distributorInstance; Database = 'master'; } 
+        @{ SqlFilePath = "$sqlScriptDirectory/configure-publisher-to-use-distribution-database.sql"; Instance = $distributorInstance; Database = 'master'; }
+        @{ SqlFilePath = "$sqlScriptDirectory/configure-remote-distributor-on-publisher.sql"; Instance = $publisherInstance; Database = 'master'; }
 
-        @{ SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/create-table-article-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/create-proc-article-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/change-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
+        #@{ SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
+        #@{ SqlFilePath = "$sqlScriptDirectory/create-table-article-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
+        #@{ SqlFilePath = "$sqlScriptDirectory/create-proc-article-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
+        #@{ SqlFilePath = "$sqlScriptDirectory/change-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
 
-        # Todo we may need to create a trn here
-        # From Note: You need to do a backup after the Publication was configured on the Publisher. 
-        # Otherwise the initialization from backup will not work!
-        # In http://www.sqlpassion.at/archive/2012/08/05/initialize-a-transactional-replication-from-a-database-backup/
+        ## Todo we may need to create a trn here
+        ## From Note: You need to do a backup after the Publication was configured on the Publisher. 
+        ## Otherwise the initialization from backup will not work!
+        ## In http://www.sqlpassion.at/archive/2012/08/05/initialize-a-transactional-replication-from-a-database-backup/
         # and move a full backup to the top of steps 
 
-        @{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/backup-full-publisher-database.sql"; Instance = $publisher; Database = $masterDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/drop-create-db-on-subscriber.sql"; Instance = $subscriber; Database = $masterDB; }
+        #@{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributor; Database = 'master'; }
+        #@{ SqlFilePath = "$sqlScriptDirectory/backup-full-publisher-database.sql"; Instance = $publisher; Database = 'master'; }
+        #@{ SqlFilePath = "$sqlScriptDirectory/drop-create-db-on-subscriber.sql"; Instance = $subscriber; Database = 'master'; }
 
-        @{ SqlFilePath = "$sqlScriptDirectory/create-subscription-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributor; Database = $msdbDB; }
+        #@{ SqlFilePath = "$sqlScriptDirectory/create-subscription-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
+        #@{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributor; Database ='master'; }
     )
 
-    Clear-DatabaseProcess -Instance $Publisher -Database $PublicationDB
-    Clear-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB
-
-    Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
+    Stop-DatabaseProcess -Instance $Publisher -Database $PublicationDB -Username $Username -Password $Password
+    Stop-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB -Username $Username -Password $Password
+    Invoke-Steps -StepVariable $stepVariables -SharedVariables $sharedVariables -Username $Username -Password $Password
 }
 
-function Remove-Replication {
+function Uninstall-Replication {
     param(
         [Parameter(Mandatory = $true)] [string] $Publisher,
         [Parameter(Mandatory = $true)] [string] $Distributor,
         [Parameter(Mandatory = $true)] [string] $Subscriber,
-        [Parameter(Mandatory = $true)] [string] $PublicationDB
+        [Parameter(Mandatory = $true)] [string] $PublicationDB,
+        [Parameter(Mandatory = $true)] [string] $Username,
+        [Parameter(Mandatory = $true)] [SecureString] $Password
+
     )
     "Distributor $Distributor"
 
@@ -115,15 +108,15 @@ function Remove-Replication {
 
     $stepVariables = @(
         @{ SqlFilePath = "$sqlScriptDirectory/drop-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; } 
-        @{ SqlFilePath = "$sqlScriptDirectory/clean-replication-on-publisher.sql"; Instance = $publisher; Database = $masterDB; } 
-        @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-subscriber.sql"; Instance = $subscriber; Database = $masterDB; } 
-        @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-distributor.sql"; Instance = $distributor; Database = $masterDB; } 
+        @{ SqlFilePath = "$sqlScriptDirectory/clean-replication-on-publisher.sql"; Instance = $publisher; Database = $masterDatabase; } 
+        @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-subscriber.sql"; Instance = $subscriber; Database = $masterDatabase; } 
+        @{ SqlFilePath = "$sqlScriptDirectory/drop-replication-on-distributor.sql"; Instance = $distributor; Database = $masterDatabase; } 
     )
 
-    Stop-DatabaseProcess -Instance $Distributor -Database $distributionDB
-    Stop-DatabaseProcess -Instance $Publisher -Database $PublicationDB
-    Stop-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB
-    Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables
+    Stop-DatabaseProcess -Instance $Distributor -Database $distributionDB -Username $Username -Password $Password
+    Stop-DatabaseProcess -Instance $Publisher -Database $PublicationDB -Username $Username -Password $Password
+    Stop-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB -Username $Username -Password $Password
+    Invoke-Steps -StepVariable $stepVariables -SqlVariables $variables -Username $Username -Password $Password
 }
 
 function Invoke-Query {
@@ -166,15 +159,23 @@ function Invoke-Query {
 
 function Invoke-Steps {
     param(
-        $tepVariables, 
-        $SqlVariables
+        $StepVariables, 
+        $SharedVariables,
+        $Username,
+        [SecureString] $Password
     )
 
     $StepVariables | ForEach-Object {
         $step = $_
         try {
             "Executing $($step.SqlFilePath)"
-            Invoke-Query -Instance $step.Instance -Database $step.Database -SqlFilePath $step.SqlFilePath -Variables $SqlVariables 
+            Invoke-Query `
+                -Instance $step.Instance `
+                -Database $step.Database `
+                -SqlFilePath $step.SqlFilePath `
+                -Variables $SharedVariables `
+                -Username $Username `
+                -Password $Password
         }
         catch {
             "Error occured when executing $($step.SqlFilePath)"
@@ -219,7 +220,7 @@ function Stop-DatabaseProcess() {
 
 function Get-PlainTextPassword {
     param(
-        [SecureString] $Password
+        [Parameter(Mandatory = $true)] [SecureString] $Password
     )
 
     $binaryString = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
@@ -229,3 +230,6 @@ function Get-PlainTextPassword {
 
 Export-ModuleMember -Function Stop-DatabaseProcess
 Export-ModuleMember -Function Invoke-Query
+Export-ModuleMember -Function Install-Replication
+Export-ModuleMember -Function Uninstall-Replication
+Export-ModuleMember -Function Get-PlainTextPassword
