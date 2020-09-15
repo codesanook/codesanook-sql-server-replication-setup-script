@@ -1,7 +1,7 @@
-DECLARE @publication AS sysname;
-SET @publication = '$(publication)'; 
+DECLARE @publication AS SYSNAME
+SET @publication = '$(publication)'
 
-exec sp_changepublication
-@publication = @publication, 
-@property = N'allow_initialize_from_backup',
-@value = N'true'--We will initialize replication from backup file
+EXEC sp_changepublication
+    @publication = @publication, 
+    @property = 'allow_initialize_from_backup',
+    @value = 'true' -- We will initialize replication from a backup file.

@@ -1,35 +1,34 @@
-DECLARE @publicationDB AS sysname;
-DECLARE @publication AS sysname;
-DECLARE @jobLogin AS sysname;
-DECLARE @jobPassword AS sysname;
+DECLARE @publicationDB AS sysname
+DECLARE @publication AS sysname
+DECLARE @username AS sysname
+DECLARE @password AS sysname
 
-SET @publicationDB = '$(publicationDB)'; 
-SET @publication = '$(publication)'; 
+SET @publicationDB = '$(publicationDB)'
+SET @publication = '$(publication)'
 
--- Windows account used to run the Log Reader and Snapshot Agents.
-SET @jobLogin = '$(jobLogin)'
-SET @jobPassword = '$(jobPassword)' 
+-- SQL Server authentication login
+SET @username = '$(username)'
+SET @password = '$(password)' 
 
--- Enable transactional or snapshot replication on the publication database.
+-- Enable transactional replication on the publication database.
 EXEC sp_replicationdboption 
-	@dbname=@publicationDB, 
-	@optname=N'publish',
-	@value = N'true';
+	@dbname = @publicationDB, 
+	@optname ='publish',
+	@value = 'true'
 
--- Execute sp_addlogreader_agent to create the agent job. 
-EXEC sp_addlogreader_agent 
-	@job_login = @jobLogin, 
-	@job_password = @jobPassword,
-	-- Explicitly specify the use of Windows Integrated Authentication (default) 
-	-- when connecting to the Publisher.
-	@publisher_security_mode = 1;
+-- Execute sp_addlogreader_agent to create an agent job. 
+EXEC sp_addlogreader_agent
+	-- Explicitly specify SQL Server Authentication when connecting to a publisher.
+	@publisher_security_mode = 0,
+	@publisher_login = @username,
+    @publisher_password = @password
+
 
 -- Create a new transactional publication with the required properties. 
 EXEC sp_addpublication 
 	@publication = @publication, 
-	@status = N'active',
-	@allow_push = N'true',
-	@allow_pull = N'true',
-	@independent_agent = N'true',
-	@allow_initialize_from_backup = N'false', --prvent errors that not create replication stored proc 
-	@immediate_sync = N'true'; --avoid missing transactions while subscribers are being brought online.
+	@status = 'active',
+	@allow_push = 'true',
+	@independent_agent = 'true',
+	@allow_initialize_from_backup = 'false', -- Prevent errors that not create replication for stored proc 
+	@immediate_sync = 'true' -- Avoid missing transactions while subscribers are being brought online.

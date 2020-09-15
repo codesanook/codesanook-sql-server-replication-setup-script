@@ -13,8 +13,8 @@ $subscriber = "subscriber"
 $username = "sa" 
 $masterDatase = "master"
 $applicationDatabase = "ThingsToDo"
-$articleTable = "ToDoItems"
-$articleStoredProc = "InsertToDoItem"
+$tableArticle = "ToDoItems"
+$storedProcArticle = "InsertToDoItem"
 
 Stop-DatabaseProcess `
     -Instance $publisher `
@@ -49,13 +49,14 @@ Invoke-Query `
     -Password $Password
 "Stored proc created on a database $applicationDatabase"
 
+# Pass arguments as hash table/dictionary
 $arguments = @{
     Publisher         = $publisher
     Distributor       = $distributor
     Subscriber        = $subscriber
     PublicationDB     = $applicationDatabase
-    ArticleTable      = $articleTable
-    ArticleStoredProc = $articleStoredProc
+    TableArticle      = $tableArticle
+    StoredProcArticle = $storedProcArticle
     Username          = $username
     Password          = $Password 
 }
