@@ -1,16 +1,20 @@
---drop if exist
-IF db_id('$(backupDBName)') IS NOT NULL
+USE master
+GO
+
+DECLARE @databaseName VARCHAR(50)
+SET @databaseName = '$(publicationDB)'
+
+-- Drop if exist
+IF DB_ID(@databaseName) IS NOT NULL
 BEGIN
-	DROP DATABASE [$(backupDBName)] 
+	EXEC('DROP DATABASE ' + @databaseName )
 END
 
---restore full backup
-RESTORE DATABASE [$(backupDBName)] 
-	FROM DISK = '$(backupDBDirectory)$(backupDBName).BAK' 
-
+-- Restore full backup to a default location
+RESTORE DATABASE @databaseName 
+FROM DISK = '$(backupPath)'
 WITH 
-	MOVE '$(backupDBName)' TO '$(restoreDBDirectory)$(backupDBName).mdf', 
-	MOVE '$(backupDBName)_Log'  TO '$(restoreDBDirectory)$(backupDBName)_Log.ldf', 
-	RECOVERY, REPLACE, STATS = 10;
-
+	RECOVERY, 
+	REPLACE
+GO
 

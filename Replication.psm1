@@ -1,12 +1,9 @@
 # https://medium.com/@gareth.newman/sql-server-replication-on-docker-a-glimpse-into-the-future-46086c7b3f2
 
-$distributionDB = "distribution"
 # We execute SQL PowerShell from external network so we need to use localhost with external port .
 $publisherInstance = "localhost,1433"
 $distributorInstance = "localhost,1434"
 $subscriberInstance = "localhost,1435"
-
-# Windows account used to run the Log Reader and distribution Agents.
 
 function Install-Replication {
     param(
@@ -16,22 +13,22 @@ function Install-Replication {
         [Parameter(Mandatory = $true)] [string] $Username,
         [Parameter(Mandatory = $true)] [SecureString] $Password,
         [Parameter(Mandatory = $true)] [string] $PublicationDB,
+        [Parameter(Mandatory = $true)] [string] $SubscriptionDB,
+        [Parameter(Mandatory = $true)] [string] $DistributionDB,
         [Parameter(Mandatory = $true)] [string] $TableArticle,
         [Parameter(Mandatory = $true)] [string] $StoredProcArticle
     )
 
     $jobPassword =  $plainTextPassword
     $publication = "$($PublicationDB)Publication"
-    $subscriptionDB = $PublicationDB
-
-    $backupDBDirectory = "/var/opt/mssql/backup"
-    $restoreDBDirectory = "/var/opt/mssql/backup"
+    $backupPath = "/var/opt/mssql/backup/$PublicationDB.bak"
 
     $sqlScriptDirectory = "$PSScriptRoot/create-replication"
     $plainTextPassword = Get-PlainTextPassword -Password $Password
+
     $sharedVariables = @(
         "distributor=$Distributor"
-        "distributionDB=$distributionDB"
+        "distributionDB=$DistributionDB"
         "distributorPassword=$plainTextPassword" # A password of distributor_admin
 
         "publisher=$Publisher" 
@@ -42,12 +39,9 @@ function Install-Replication {
         "password=$plainTextPassword"
         "tableArticle=$TableArticle"
         "storedProcArticle=$StoredProcArticle"
-
-        "backupDBName=$PublicationDB"
-        "backupDBDirectory=$backupDBDirectory"
-        "restoreDBDirectory=$restoreDBDirectory"
+        "backupPath=$backupPath"
         "subscriber=$Subscriber"
-        "subscriptionDB=$subscriptionDB"
+        "subscriptionDB=$SubscriptionDB"
     )   
 
     $stepVariables = @(
@@ -56,22 +50,24 @@ function Install-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/configure-publisher-to-use-distribution-database.sql"; Instance = $distributorInstance; Database = 'master'; }
         @{ SqlFilePath = "$sqlScriptDirectory/configure-remote-distributor-on-publisher.sql"; Instance = $publisherInstance; Database = 'master'; }
 
-        @{ SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/create-table-article-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/create-stored-proc-article-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/change-publication-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-publication-on-publisher.sql"; Instance = $publisherInstance; Database = $PublicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-table-article-on-publisher.sql"; Instance = $publisherInstance; Database = $PublicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/create-stored-proc-article-on-publisher.sql"; Instance = $publisherInstance; Database = $publicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/change-publication-on-publisher.sql"; Instance = $publisherInstance; Database = $PublicationDB; }
 
         ## Todo we may need to create a log backup (.trn file) here
         ## From Note: You need to do a backup after the Publication was configured on the Publisher. 
         ## Otherwise the initialization from full backup won't work!
         ## More details: http://www.sqlpassion.at/archive/2012/08/05/initialize-a-transactional-replication-from-a-database-backup/
 
-        #@{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributor; Database = 'master'; }
-        #@{ SqlFilePath = "$sqlScriptDirectory/backup-full-publisher-database.sql"; Instance = $publisher; Database = 'master'; }
-        #@{ SqlFilePath = "$sqlScriptDirectory/drop-create-db-on-subscriber.sql"; Instance = $subscriber; Database = 'master'; }
+        # Todo check why do we need distribution clean up
+        @{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributorInstance; Database = 'msdb'; }
 
-        #@{ SqlFilePath = "$sqlScriptDirectory/create-subscription-on-publisher.sql"; Instance = $publisher; Database = $PublicationDB; }
-        #@{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributor; Database ='master'; }
+        @{ SqlFilePath = "$sqlScriptDirectory/backup-full-publisher-database.sql"; Instance = $publisherInstance; Database = 'master'; }
+        @{ SqlFilePath = "$sqlScriptDirectory/drop-create-db-on-subscriber.sql"; Instance = $subscriberInstance; Database = 'master'; }
+
+        @{ SqlFilePath = "$sqlScriptDirectory/create-subscription-on-publisher.sql"; Instance = $publisherInstance; Database = $PublicationDB; }
+        @{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributorInstance; Database ='msdb'; }
     )
 
     Stop-DatabaseProcess -Instance $Publisher -Database $PublicationDB -Username $Username -Password $Password

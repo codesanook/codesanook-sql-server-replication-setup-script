@@ -26,3 +26,4 @@ EXEC sp_addarticle
     @destination_owner = @schemaOwner,
     @creation_script = null,
 	@pre_creation_cmd = 'drop'
+GO

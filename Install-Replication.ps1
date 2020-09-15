@@ -9,52 +9,60 @@ Import-Module -Name .\Replication -Force
 $publisher = "publisher"
 $distributor = "distributor"
 $subscriber = "subscriber"
+$publisherInstance = "localhost,1433"
 
-$username = "sa" 
-$masterDatase = "master"
-$applicationDatabase = "ThingsToDo"
+$publicationDB = "ThingsToDo"
+$distributionDB = "distribution"
+$subscriptionDB = "ThingsToDo"
+
 $tableArticle = "ToDoItems"
 $storedProcArticle = "InsertToDoItem"
 
+$username = "sa" 
+
 Stop-DatabaseProcess `
-    -Instance $publisher `
-    -Database $applicationDatabase `
+    -Instance $publisherInstance `
+    -Database $publicationDB `
     -Username $username `
     -Password $Password
 
 $createDatabaseScript = "./create-database-objects/create-database.sql" 
 Invoke-Query `
-    -Instance $publisher `
-    -Database $masterDatase `
+    -Instance $publisherInstance `
+    -Database 'master' `
     -SqlFilePath $createDatabaseScript `
     -Username $username `
     -Password $Password
-"Database $applicationDatabase created"
+"Database $publicationDB created"
     
 $createTableScript = "./create-database-objects/create-table.sql" 
 Invoke-Query `
-    -Instance $publisher `
-    -Database $applicationDatabase `
+    -Instance $publisherInstance `
+    -Database $publicationDB `
     -SqlFilePath $createTableScript `
     -Username $username `
     -Password $Password
-"Table created on a database $applicationDatabase"
+"Table created on a database $publicationDB"
 
 $createStoredProcedureScript = "./create-database-objects/create-stored-procedure.sql" 
 Invoke-Query `
-    -Instance $publisher `
-    -Database $applicationDatabase `
+    -Instance $publisherInstance `
+    -Database $publicationDB `
     -SqlFilePath $createStoredProcedureScript `
     -Username $username `
     -Password $Password
-"Stored proc created on a database $applicationDatabase"
+"Stored proc created on a database $publicationDB"
 
 # Pass arguments as hash table/dictionary
 $arguments = @{
     Publisher         = $publisher
     Distributor       = $distributor
     Subscriber        = $subscriber
-    PublicationDB     = $applicationDatabase
+
+    PublicationDB     = $publicationDB
+    DistributionDB    = $distributionDB
+    SubscriptionDB    = $subscriptionDB
+
     TableArticle      = $tableArticle
     StoredProcArticle = $storedProcArticle
     Username          = $username

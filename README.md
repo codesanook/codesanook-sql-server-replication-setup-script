@@ -1,56 +1,32 @@
-# My basic replication presentation (Google slide)
-
-[link to the presentation](https://docs.google.com/presentation/d/1WVNzJEmeNGpoRpzuFr0Y-C-_od4R3oDrrMkifdlVNVM/edit?usp=sharing)
-
-# Requirement
-
-At least SQL Server Developer edition 2014
-Now, Microsoft SQL Server Developer is free now, you can down load from
-
-For 2014:
-https://my.visualstudio.com/Downloads?q=SQL%20Server%202014%20Developer
-
-For 2016:
-https://my.visualstudio.com/Downloads?q=SQL%20Server%202016%20Developer
-
-If you have installed SQL computer, you can check with the following query.
-
-```
-SELECT @@VERSION AS SqlServerVersion
-```
-
-You need three SQL server instances for:
-
-- Publisher
-- Subscriber
-- Distributor
+# Basic replication presentation (Google slide)
+- [link to the presentation](https://docs.google.com/presentation/d/1WVNzJEmeNGpoRpzuFr0Y-C-_od4R3oDrrMkifdlVNVM/edit?usp=sharing)
 
 ## To use this example
-
-- Launch docker containers
-
+- Launch a new PowerShell terminal.
+- Start SQL Server docker containers.
+- CD to docker folder.
+- Create a new file 'sa_password.secret' and put a strong sa's password to this file. Please make sure that you use LF line feed. 
+- Run a docker-compose command with a following command.
 ```
-docker-compose up
-
+    docker-compose up
 ```
+- Wait for a while and you will have publisher,  distributor and subscriber instances.
+- You can connect to each SQL Server instance with this information .
+- publisher: localhost, 1433
+- distributor: localhost, 1434
+- subscriber: localhost, 1435
 
-## To setup replication with create a new database
-
-- Launch a new PowerShell terminal
-- CD to the root of the project
-- Open Install-Replication.ps1 and change all variables to match your need.
-- Run the Install-Replication.ps1 script
-
+## Create a new database and setup replication 
+- Launch a new PowerShell terminal.
+- CD to the root of the project.
+- Execute the following commmand to setup replication.
 ```
-. \Install-Replication.ps1
+    .\Install-Replication.ps1
 ```
-
-- After setup is successfully, you will have a new database with replication setup
-
-## To remove replication
-
-- Run the Install-Replication.ps1 script
+- After setup successfully, you will have a new database with replication.
 
 ## Testing a replication
-
-- Run New-ToDoItem.ps1
+- Run New-DatabaseRecord.ps1. It will excute stored proc to insert a new record to publisher and then select records from subscription database.
+```
+    .\New-DatabaseRecord.ps1
+```

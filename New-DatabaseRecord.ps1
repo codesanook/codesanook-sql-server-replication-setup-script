@@ -1,11 +1,14 @@
-#include replication library 
-. "$PSScriptRoot/replication.ps1"
+param(
+    [Parameter(Mandatory = $true)] [SecureString] $Password
+)
 
-$publisher = "DESKTOP-TEOD82V\PUBLISHER"
-$subscriber = "DESKTOP-TEOD82V\SUBSCRIBER"
+# Import Replication module 
+Import-Module -Name .\Replication -Force
 
+$username = "sa"
 $database = "ThingsToDo"
-$sqlFilePath = "insert-new-data.sql"
+$publisherInstance = "localhost, 1433"
+$subscriberInstance = "localhost, 1435"
 
 $title = "Say XinChao"
 $details = "Say XinChao to everyone"
@@ -19,15 +22,11 @@ $command = @"
 
     PRINT @newId
 "@
-
-Invoke-Query -Instance $publisher -Database $database -Query $command
-"new data inserted"
+Invoke-Query -Instance $publisherInstance -Database $database -Query $command -Username $username -Password $Password
+"New record inserted"
 
 "Wait a bit to get replication process done"
 Start-Sleep -Seconds 5
 
-$command = @"
-    SELECT * FROM ToDoItems
-"@
-
-Invoke-Query -Instance $subscriber -Database $database -Query $command
+$command = "SELECT * FROM ToDoItems"
+Invoke-Query -Instance $subscriberInstance -Database $database -Query $command -Username $username -Password $Password

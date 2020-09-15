@@ -1,10 +1,15 @@
-DECLARE @jobName AS sysname;
+USE msdb
+GO
+
+DECLARE @jobName AS SYSNAME
 SET @jobName = 'Distribution clean up: distribution'
 
---disable job to auto restart
-EXEC dbo.sp_update_job @job_name = @jobName, @enabled = 0;
+-- Disable job to auto restart
+EXEC dbo.sp_update_job 
+    @job_name = @jobName, 
+    @enabled = 0
 
---stop job if it is running 
+-- Stop a job if it is running.
 If EXISTS(
     SELECT sj.name
     FROM dbo.sysjobactivity AS sja
@@ -17,3 +22,4 @@ BEGIN
     PRINT 'stopping job'
     EXEC dbo.sp_stop_job @job_name = @jobName 
 END
+GO

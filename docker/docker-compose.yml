@@ -15,28 +15,24 @@ services:
     container_name: publisher
     ports:
       - "1433:1433"
+    # https://blog.dbi-services.com/managing-sql-server-sa-credentials-with-docker-secrets-on-swarm/
+    # Usage of secret file for a service
+    secrets:
+      - sa_password
+    volumes:
+      # Use name volumes
+      - mssql_backup:/var/opt/mssql/backup
     environment:
       # https://docs.microsoft.com/en-us/sql/linux/sql-server-linux-configure-environment-variables?view=sql-server-ver15#environment-variables
       - MSSQL_PID=Developer
       - MSSQL_SA_PASSWORD_FILE=/run/secrets/sa_password
       - ACCEPT_EULA="Y"
       - MSSQL_AGENT_ENABLED=true
-      #- MSSQL_DATA_DIR=/var/opt/mssql/data
-      #- MSSQL_LOG_DIR=/var/opt/mssql/log
-      #- MSSQL_BACKUP_DIR=/var/opt/mssql/backup
-    # https://blog.dbi-services.com/managing-sql-server-sa-credentials-with-docker-secrets-on-swarm/
-    # Usage of secret file for a service
-    secrets:
-      - sa_password
-    #volumes:
-      # Bind host volumes
-      #- ./../mssql-volumes/publisher/data:/var/opt/mssql/data
-      #- ./../mssql-volumes/publisher/log:/var/opt/mssql/log
-      #- ./../mssql-volumes/publisher/backup:/var/opt/mssql/backup
+      - MSSQL_BACKUP_DIR=/var/opt/mssql/backup
 
   distributor:
     depends_on: 
-      - publisher # We want to use image built by a publisher
+      - publisher # We want to use an image built by a publisher
     image: replication:latest
     hostname: distributor
     container_name: distributor
@@ -47,41 +43,33 @@ services:
       - MSSQL_SA_PASSWORD_FILE=/run/secrets/sa_password
       - ACCEPT_EULA="Y"
       - MSSQL_AGENT_ENABLED=true
-      #- MSSQL_DATA_DIR=/var/opt/mssql/data
-      #- MSSQL_LOG_DIR=/var/opt/mssql/log
-      #- MSSQL_BACKUP_DIR=/var/opt/mssql/backup
     secrets:
       - sa_password
-    #volumes:
-      #- ./../mssql-volumes/distributor/data:/var/opt/mssql/data
-      #- ./../mssql-volumes/distributor/log:/var/opt/mssql/log
-      #- ./../mssql-volumes/distributor/backup:/var/opt/mssql/backup
 
-  #subscriber:
-  #  depends_on: 
-  #    - publisher
-  #  image: replication:latest
-  #  hostname: subscriber
-  #  container_name: subscriber
-  #  ports:
-  #    - "1435:1433"
-  #  environment:
-  #    - MSSQL_PID=Developer
-  #    - MSSQL_SA_PASSWORD_FILE=/run/secrets/sa_password
-  #    - ACCEPT_EULA="Y"
-  #    - MSSQL_DATA_DIR=/var/opt/mssql/data
-  #    - MSSQL_LOG_DIR=/var/opt/mssql/log
-  #    - MSSQL_BACKUP_DIR=/var/opt/mssql/backup
-  #    - MSSQL_AGENT_ENABLED=true
-  #  secrets:
-  #    - sa_password
-  #  volumes:
-  #    - ./../mssql-volumes/subscriber/data:/var/opt/mssql/data
-  #    - ./../mssql-volumes/subscriber/log:/var/opt/mssql/log
-  #    - ./../mssql-volumes/subscriber/backup:/var/opt/mssql/backup
+  subscriber:
+    depends_on: 
+      - publisher
+    image: replication:latest
+    hostname: subscriber
+    container_name: subscriber
+    ports:
+      - "1435:1433"
+    secrets:
+      - sa_password
+    volumes:
+      - mssql_backup:/var/opt/mssql/backup
+    environment:
+      - MSSQL_PID=Developer
+      - MSSQL_SA_PASSWORD_FILE=/run/secrets/sa_password
+      - ACCEPT_EULA="Y"
+      - MSSQL_AGENT_ENABLED=true
+      - MSSQL_BACKUP_DIR=/var/opt/mssql/backup
 
 # Define a secret at top level
 # External secrets are not available to containers created by docker-compose.
 secrets:
   sa_password:
     file: ./sa_password.secret
+# Shared name volume
+volumes:
+  mssql_backup:
