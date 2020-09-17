@@ -23,13 +23,13 @@ function Install-Replication {
     $publication = "$($PublicationDB)Publication"
     $backupPath = "/var/opt/mssql/backup/$PublicationDB.bak"
 
-    $sqlScriptDirectory = "$PSScriptRoot/create-replication"
+    $sqlScriptDirectory = "$PSScriptRoot/install-replication-scripts"
     $plainTextPassword = Get-PlainTextPassword -Password $Password
 
     $sharedVariables = @(
         "distributor=$Distributor"
         "distributionDB=$DistributionDB"
-        "distributorPassword=$plainTextPassword" # A password of distributor_admin
+        "distributorAdminPassword=$plainTextPassword" # A password of distributor_admin
 
         "publisher=$Publisher" 
         "publicationDB=$PublicationDB"
@@ -70,8 +70,6 @@ function Install-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributorInstance; Database ='msdb'; }
     )
 
-    Stop-DatabaseProcess -Instance $Publisher -Database $PublicationDB -Username $Username -Password $Password
-    Stop-DatabaseProcess -Instance $Subscriber -Database $subscriptionDB -Username $Username -Password $Password
     Invoke-Steps -StepVariable $stepVariables -SharedVariables $sharedVariables -Username $Username -Password $Password
 }
 

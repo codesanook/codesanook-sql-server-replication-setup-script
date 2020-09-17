@@ -1,4 +1,5 @@
-use AdventureWorks2014
-go
+USE AdventureWorks2014
+GO
 
-exec sp_helppublication
+EXEC sp_helppublication
+GO

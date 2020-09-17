@@ -1,5 +1,6 @@
 USE msdb
 GO
+-- Disable the "Distribution clean up: distribution" job to make sure that no commands are deleted from MSRepl_commands table durring set up
 
 DECLARE @jobName AS SYSNAME
 SET @jobName = 'Distribution clean up: distribution'

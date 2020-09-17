@@ -1,7 +1,7 @@
 USE master
 GO
 
-DECLARE @databaseName VARCHAR(50)
+DECLARE @databaseName SYSNAME
 SET @databaseName = '$(publicationDB)'
 
 -- Drop if exist
