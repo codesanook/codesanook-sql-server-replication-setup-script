@@ -17,5 +17,7 @@ EXEC sp_addpublication
 	@status = 'active',
 	@allow_push = 'true',
 	@independent_agent = 'true',
-	@allow_initialize_from_backup = 'false', -- Prevent errors that not creating a replication for stored proc 
+	-- Prevent errors that not creating stored proc for table aricles.
+	-- We will set it to true after we create articles.
+	@allow_initialize_from_backup = 'false', 
 	@immediate_sync = 'true' -- Avoid missing transactions while subscribers are being brought online.

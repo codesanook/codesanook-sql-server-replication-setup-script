@@ -26,7 +26,7 @@ Invoke-Query -Instance $publisherInstance -Database $database -Query $command -U
 "New record inserted"
 
 "Wait a bit to get replication process done"
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 10
 
 $command = "SELECT * FROM ToDoItems"
 Invoke-Query -Instance $subscriberInstance -Database $database -Query $command -Username $username -Password $Password

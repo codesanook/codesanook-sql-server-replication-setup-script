@@ -55,19 +55,13 @@ function Install-Replication {
         @{ SqlFilePath = "$sqlScriptDirectory/create-stored-proc-article-on-publisher.sql"; Instance = $publisherInstance; Database = $publicationDB; }
         @{ SqlFilePath = "$sqlScriptDirectory/change-publication-on-publisher.sql"; Instance = $publisherInstance; Database = $PublicationDB; }
 
-        ## Todo we may need to create a log backup (.trn file) here
-        ## From Note: You need to do a backup after the Publication was configured on the Publisher. 
-        ## Otherwise the initialization from full backup won't work!
-        ## More details: http://www.sqlpassion.at/archive/2012/08/05/initialize-a-transactional-replication-from-a-database-backup/
-
-        # Todo check why do we need distribution clean up
-        @{ SqlFilePath = "$sqlScriptDirectory/disable-distribution-clean-up.sql"; Instance = $distributorInstance; Database = 'msdb'; }
-
+        # You need to do a backup after the Publication was configured on the Publisher. 
+        # Otherwise the initialization from full backup won't work!
+        # More details: http://www.sqlpassion.at/archive/2012/08/05/initialize-a-transactional-replication-from-a-database-backup/
+        # We may need to create a log backup (.trn file) here
         @{ SqlFilePath = "$sqlScriptDirectory/backup-full-publisher-database.sql"; Instance = $publisherInstance; Database = 'master'; }
         @{ SqlFilePath = "$sqlScriptDirectory/drop-create-db-on-subscriber.sql"; Instance = $subscriberInstance; Database = 'master'; }
-
         @{ SqlFilePath = "$sqlScriptDirectory/create-subscription-on-publisher.sql"; Instance = $publisherInstance; Database = $PublicationDB; }
-        @{ SqlFilePath = "$sqlScriptDirectory/enable-distribution-clean-up.sql"; Instance = $distributorInstance; Database ='msdb'; }
     )
 
     Invoke-Steps -StepVariable $stepVariables -SharedVariables $sharedVariables -Username $Username -Password $Password
