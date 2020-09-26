@@ -10,6 +10,11 @@
 ```
     docker-compose up
 ```
+Alternatively, if you want to force build an image, use 
+```
+    docker-compose up --build
+```
+
 - Wait for a while and you will have publisher,  distributor and subscriber instances.
 - You can connect to each SQL Server instance with this information .
 - publisher: localhost, 1433

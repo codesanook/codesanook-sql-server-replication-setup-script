@@ -1,6 +1,8 @@
 USE msdb
 GO
 -- Disable the "Distribution clean up: distribution" job to make sure that no commands are deleted from MSRepl_commands table durring set up
+-- It is useful for a production environment
+-- https://www.mssqltips.com/sqlservertip/3358/automating-sql-server-transactional-replication-initialization-from-a-backup/
 
 DECLARE @jobName AS SYSNAME
 SET @jobName = 'Distribution clean up: distribution'

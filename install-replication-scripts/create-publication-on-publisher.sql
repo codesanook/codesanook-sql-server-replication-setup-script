@@ -19,5 +19,7 @@ EXEC sp_addpublication
 	@independent_agent = 'true',
 	-- Prevent errors that not creating stored proc for table aricles.
 	-- We will set it to true after we create articles.
+	-- Stored procedures don't generate on a subscription database when you configure a transactional replication in SQL Server
+	-- https://support.microsoft.com/en-ca/help/2863979/fix-stored-procedures-don-t-generate-on-a-subscription-database-when-y
 	@allow_initialize_from_backup = 'false', 
 	@immediate_sync = 'true' -- Avoid missing transactions while subscribers are being brought online.
