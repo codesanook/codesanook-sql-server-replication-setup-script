@@ -17,9 +17,9 @@ Alternatively, if you want to force build an image, use
 
 - Wait for a while and you will have publisher,  distributor and subscriber instances.
 - You can connect to each SQL Server instance with this information .
-- publisher: localhost, 1433
-- distributor: localhost, 1434
-- subscriber: localhost, 1435
+- publisher: localhost, 2000
+- distributor: localhost, 2001
+- subscriber: localhost, 2002
 
 ## Create a new database and setup replication 
 - Launch a new PowerShell terminal.

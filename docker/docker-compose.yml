@@ -14,7 +14,7 @@ services:
     # https://docs.docker.com/compose/compose-file/#container_name
     container_name: publisher
     ports:
-      - "1433:1433"
+      - "2000:1433"
     # https://blog.dbi-services.com/managing-sql-server-sa-credentials-with-docker-secrets-on-swarm/
     # Usage of secret file for a service
     secrets:
@@ -37,7 +37,7 @@ services:
     hostname: distributor
     container_name: distributor
     ports:
-      - "1434:1433"
+      - "2001:1433"
     environment:
       - MSSQL_PID=Developer
       - MSSQL_SA_PASSWORD_FILE=/run/secrets/sa_password
@@ -53,7 +53,7 @@ services:
     hostname: subscriber
     container_name: subscriber
     ports:
-      - "1435:1433"
+      - "2002:1433"
     secrets:
       - sa_password
     volumes:
